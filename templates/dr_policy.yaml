@@ -19,10 +19,10 @@ spec:
   - {{ include "rdr.primaryClusterName" $ }}
   - {{ include "rdr.secondaryClusterName" $ }}
   schedulingInterval: {{ .interval }}
-{{- if .vmSupport }}
+{{- if .replicationClassSelector }}
   replicationClassSelector:
     matchLabels:
-      replication.storage.openshift.io/flatten-mode: force
+      {{- toYaml .replicationClassSelector | nindent 6 }}
 {{- end }}
 {{- end }}
 {{- end }}

@@ -1,0 +1,25 @@
+---
+# Cluster names. Set via global values in values-cluster-names.yaml:
+#   global.primaryClusterName: my-primary
+#   global.secondaryClusterName: my-secondary
+#   global.clusterSetName: resilient
+global:
+  primaryClusterName: ocp-primary
+  secondaryClusterName: ocp-secondary
+  clusterSetName: resilient
+  clusterPlatform: AWS
+
+ansible:
+  containerImage: quay.io/validatedpatterns/utility-container:latest
+
+submariner:
+  instanceType: m5.xlarge
+  ipsecNatPort: 4500
+  NATTEnable: true
+  cableDriver: vxlan
+  sgTagJobEnabled: false
+
+odfRamenTrustedCa:
+  ramenS3WaitSeconds: 3600
+  trustedCaWaitSeconds: 3600
+  pollInterval: 15

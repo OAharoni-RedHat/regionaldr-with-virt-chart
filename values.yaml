@@ -17,10 +17,11 @@ global:
   # AWS: Hive AWS creds ExternalSecret, ClusterDeployment platform.aws, Submariner gateway/credentials. Use non-AWS (e.g. BareMetal) to skip those.
   clusterPlatform: AWS
 
-# ODF post-install automation: MirrorPeer, prerequisites checker + Ramen hub trusted CA jobs/RBAC.
-# When false: DRCluster CRs are created directly; set drCluster.*S3ProfileName to existing hub Ramen S3 profile names.
-# Set true in overrides/values-storage-odf.yaml for ODF/Ceph deployments.
+# ODF subchart (charts/rdr-odf): Submariner, MirrorPeer, ODF prerequisites, Ramen trusted CA.
+# Set odf.enabled: true via extraValueFiles (e.g. overrides/values-storage-odf.yaml) for ODF/Ceph deployments.
+# When false (default): DRCluster CRs are created directly; set drCluster.*S3ProfileName to hub Ramen S3 profile names.
 odf:
+  enabled: false
   postInstallFixesEnabled: false
   drCluster:
     primaryS3ProfileName: ""

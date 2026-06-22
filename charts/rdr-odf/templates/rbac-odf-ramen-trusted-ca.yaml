@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: odf-ramen-trusted-ca
     app.kubernetes.io/component: ramen-hub-ca
   annotations:
-    argocd.argoproj.io/sync-wave: "9"
+    argocd.argoproj.io/sync-wave: "6"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -17,7 +17,7 @@ metadata:
     app.kubernetes.io/name: odf-ramen-trusted-ca
     app.kubernetes.io/component: ramen-hub-ca
   annotations:
-    argocd.argoproj.io/sync-wave: "9"
+    argocd.argoproj.io/sync-wave: "6"
 rules:
 - apiGroups: [""]
   resources: ["configmaps"]
@@ -31,7 +31,7 @@ metadata:
     app.kubernetes.io/name: odf-ramen-trusted-ca
     app.kubernetes.io/component: ramen-hub-ca
   annotations:
-    argocd.argoproj.io/sync-wave: "9"
+    argocd.argoproj.io/sync-wave: "6"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

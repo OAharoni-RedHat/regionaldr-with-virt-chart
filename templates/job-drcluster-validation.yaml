@@ -16,7 +16,20 @@ metadata:
     app.kubernetes.io/component: health-check
     drpolicy: {{ $name }}
   annotations:
+    {{- /*
+      Wave ordering depends on how DRClusters get their S3 profiles:
+      - postInstallFixesEnabled: true  → ODF MCO creates DRClusters via MirrorPeer (wave 8);
+        odf-ramen-trusted-ca (wave 9) must patch the Noobaa CA cert before DRClusters can
+        validate. Run drcluster-validation at wave 10 so it always runs after the CA patch.
+      - postInstallFixesEnabled: false → DRClusters are created directly by the chart (wave 7)
+        with user-supplied S3 profiles that already use a trusted endpoint (e.g. AWS S3).
+        Run drcluster-validation at wave 8 — same as main — no CA patch needed.
+    */}}
+    {{- if eq "1" (include "rdr.odfPostInstallFixesEnabled" $ | trim) }}
+    argocd.argoproj.io/sync-wave: "10"
+    {{- else }}
     argocd.argoproj.io/sync-wave: "8"
+    {{- end }}
 spec:
   backoffLimit: 50
   activeDeadlineSeconds: 14400

@@ -57,4 +57,3 @@ subjects:
 - kind: ServiceAccount
   name: drpc-health-check-argocd-sync-control
   namespace: open-cluster-management
-

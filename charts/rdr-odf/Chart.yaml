@@ -1,0 +1,8 @@
+apiVersion: v2
+name: rdr-odf
+description: ODF subchart for regionaldr-with-virt-chart. Deploys all ODF/Ramen DR resources when odf.enabled=true.
+keywords:
+  - pattern
+  - odf
+  - ramen
+version: 0.1.0

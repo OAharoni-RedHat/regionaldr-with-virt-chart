@@ -18,7 +18,10 @@ global:
   clusterPlatform: AWS
 
 # ODF post-install automation: MirrorPeer, prerequisites checker + Ramen hub trusted CA jobs/RBAC.
+# Master gate: odf.enabled controls the rdr-odf subchart (condition: odf.enabled in Chart.yaml).
+# Default false — enable via override file (e.g. values-storage-odf.yaml).
 odf:
+  enabled: false
   postInstallFixesEnabled: true
   # When postInstallFixesEnabled is false: chart creates DRCluster CRs (hub) for primary/secondary; set S3 profile names that exist in hub Ramen config.
   drCluster:

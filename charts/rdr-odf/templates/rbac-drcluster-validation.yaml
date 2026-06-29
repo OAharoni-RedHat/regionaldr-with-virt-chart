@@ -46,4 +46,3 @@ subjects:
 - kind: ServiceAccount
   name: drcluster-validation-checker
   namespace: open-cluster-management
-

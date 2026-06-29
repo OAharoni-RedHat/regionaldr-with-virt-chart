@@ -1,0 +1,60 @@
+---
+clusterCaMgt:
+  # -- Namespace for ODF CA prerequisites and Ramen trusted-CA workloads.
+  namespace: cluster-ca-mgt
+  # -- Create clusterCaMgt.namespace when installing the chart.
+  createNamespace: false
+
+ansible:
+  containerImage: quay.io/validatedpatterns/utility-container:latest
+  verbosity: 0
+
+# ODF post-install automation sub-flags (odf.enabled is the master gate, controlled by the parent).
+odf:
+  postInstallFixesEnabled: true
+  drCluster:
+    primaryS3ProfileName: ""
+    secondaryS3ProfileName: ""
+
+odfRamenTrustedCa:
+  ramenS3WaitSeconds: 3600
+  trustedCaWaitSeconds: 3600
+  pollInterval: 15
+
+drpc:
+  name: gitops-vm-protection
+  namespace: openshift-dr-ops
+  drPolicyRef:
+    name: 2m-vm
+  kubeObjectProtection:
+    captureInterval: 2m0s
+    kubeObjectSelector: {}
+  placementRef:
+    name: gitops-vm-protection-placement-1
+    namespace: openshift-dr-ops
+  protectedNamespaces:
+    - gitops-vms
+  pvcSelector: {}
+  preferredCluster: ocp-primary
+  vmStorageClassName: ocs-storagecluster-ceph-rbd-virtualization
+  healthCheck:
+    maxAttempts: 30
+    retryDelaySeconds: 30
+    deleteWaitRetries: 24
+    deleteWaitDelay: 5
+
+main:
+  clusterGroupName: resilient
+
+regionalDR:
+  - name: resilient
+    globalnetEnabled: false
+    clusters:
+      primary:
+        name: ocp-primary
+      secondary:
+        name: ocp-secondary
+    drpolicies:
+      - interval: 2m
+        vmSupport: true
+      - interval: 2m

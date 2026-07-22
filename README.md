@@ -1,6 +1,6 @@
 # regionaldr-with-virt
 
-![Version: 0.0.2](https://img.shields.io/badge/Version-0.0.2-informational?style=flat-square)
+![Version: 0.0.3](https://img.shields.io/badge/Version-0.0.3-informational?style=flat-square)
 
 A Helm chart to deploy RegionalDR configuration including virtualization
 
@@ -22,7 +22,6 @@ The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these
 
 ## Notable changes
 
-v0.0.3 - Remove all ODF templates and place them in a separate chart
 v0.0.2 - Update edge-gitops-vms version to 0.5.2 to support setting default virt class and direct PVC volumes
 v0.0.1 - Initial release
 

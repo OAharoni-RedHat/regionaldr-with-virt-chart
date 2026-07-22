@@ -115,7 +115,7 @@ ansible:
   configMapArgoSyncOptions: Prune=false,ServerSideApply=true
 
 # When odf.postInstallFixesEnabled is true: odf-dr-prerequisites + odf-ramen-trusted-ca jobs/RBAC below.
-# Post-sync job odf-ramen-trusted-ca (wave 9): CA from hub cluster-proxy-ca-bundle; waits for Ramen s3StoreProfiles.
+# Post-sync job odf-ramen-trusted-ca (wave 9): CA from hub vp-pattern-proxy-ca-bundle; waits for Ramen s3StoreProfiles.
 odfRamenTrustedCa:
   ramenS3WaitSeconds: 3600
   trustedCaWaitSeconds: 3600

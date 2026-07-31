@@ -1,3 +1,4 @@
+{{- if eq "1" (include "rdr.ramenResourcesEnabled" .) }}
 {{- $drpc := .Values.drpc | default dict }}
 {{- $kop := index $drpc "kubeObjectProtection" | default dict }}
 {{- $kos := index $kop "kubeObjectSelector" | default dict }}
@@ -43,4 +44,5 @@ spec:
 {{- else }}
   pvcSelector:
 {{- toYaml $pvcSel | nindent 4 }}
+{{- end }}
 {{- end }}

@@ -1,3 +1,4 @@
+{{- if eq "1" (include "rdr.ramenResourcesEnabled" .) }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -58,3 +59,4 @@ subjects:
   name: drpc-health-check-argocd-sync-control
   namespace: open-cluster-management
 
+{{- end }}

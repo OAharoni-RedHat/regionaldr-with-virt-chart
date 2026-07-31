@@ -1,6 +1,6 @@
 # regionaldr-with-virt
 
-![Version: 0.0.2](https://img.shields.io/badge/Version-0.0.2-informational?style=flat-square)
+![Version: 0.0.4](https://img.shields.io/badge/Version-0.0.4-informational?style=flat-square)
 
 A Helm chart to deploy RegionalDR configuration including virtualization
 
@@ -22,7 +22,8 @@ The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these
 
 ## Notable changes
 
-v0.0.3 - Remove all ODF templates and place them in a separate chart
+v0.0.4 - Add `ramen.resourcesEnabled` and `edgeGitopsVms.enabled` gates for partner CSI foundation installs
+v0.0.3 - Remove all ODF templates (moved to odf-dr-chart)
 v0.0.2 - Update edge-gitops-vms version to 0.5.2 to support setting default virt class and direct PVC volumes
 v0.0.1 - Initial release
 
@@ -62,6 +63,7 @@ v0.0.1 - Initial release
 | drpc.pvcSelector | object | `{}` |  |
 | drpc.vmStorageClassName | string | `"ocs-storagecluster-ceph-rbd-virtualization"` | Block PVC storage class for KubeVirt VMs. drcluster-validation (sync-wave 8) blocks DRPC until DRPolicy status is Validated=True and status.async.peerClasses include replicationID. |
 | edgeGitopsVms.chartVersion | string | `"0.5.2"` |  |
+| edgeGitopsVms.enabled | bool | `true` | When false, skip the edge-gitops-vms deploy Job and its RBAC/ConfigMap. |
 | global.clusterDomain | string | `"cluster.example.com"` |  |
 | global.clusterPlatform | string | `"AWS"` |  |
 | global.pattern | string | `"ramendr-starter-kit-hub"` |  |
@@ -75,6 +77,7 @@ v0.0.1 - Initial release
 | odfRamenTrustedCa.pollInterval | int | `15` |  |
 | odfRamenTrustedCa.ramenS3WaitSeconds | int | `3600` |  |
 | odfRamenTrustedCa.trustedCaWaitSeconds | int | `3600` |  |
+| ramen.resourcesEnabled | bool | `true` | When false, skip DRPolicy, DRPC, Placement, DRPC health job, DRCluster validation job, and hub DRClusters. |
 | redis.external.address | string | `"rhel9-redis-001.gitops-vms.svc.cluster.local"` |  |
 | redis.external.enabled | bool | `false` |  |
 | regionalDR[0].clusters.primary.clusterGroup | string | `"resilient"` |  |

@@ -1,3 +1,4 @@
+{{- if eq "1" (include "rdr.edgeGitopsVmsEnabled" .) }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -66,3 +67,4 @@ roleRef:
   name: edge-gitops-vms-deploy-role
   apiGroup: rbac.authorization.k8s.io
 
+{{- end }}

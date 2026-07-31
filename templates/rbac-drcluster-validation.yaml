@@ -1,3 +1,4 @@
+{{- if eq "1" (include "rdr.ramenResourcesEnabled" .) }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -47,3 +48,4 @@ subjects:
   name: drcluster-validation-checker
   namespace: open-cluster-management
 
+{{- end }}

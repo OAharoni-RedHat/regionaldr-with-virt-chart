@@ -161,6 +161,18 @@
 {{- if not (hasKey $odf "postInstallFixesEnabled") -}}1{{- else if index $odf "postInstallFixesEnabled" -}}1{{- else -}}0{{- end -}}
 {{- end -}}
 
+{{/* Ramen CR/job resources (DRPolicy, DRPC, Placement, validation/health jobs). Default on. */}}
+{{- define "rdr.ramenResourcesEnabled" -}}
+{{- $ramen := .Values.ramen | default dict -}}
+{{- if not (hasKey $ramen "resourcesEnabled") -}}1{{- else if index $ramen "resourcesEnabled" -}}1{{- else -}}0{{- end -}}
+{{- end -}}
+
+{{/* Edge GitOps VMs deploy job + RBAC. Default on. */}}
+{{- define "rdr.edgeGitopsVmsEnabled" -}}
+{{- $egv := .Values.edgeGitopsVms | default dict -}}
+{{- if not (hasKey $egv "enabled") -}}1{{- else if index $egv "enabled" -}}1{{- else -}}0{{- end -}}
+{{- end -}}
+
 {{/* Stable checksum of packaged ansible/ (excludes dotfiles). Drives Job annotation drift on chart updates. */}}
 {{- define "rdr.ansibleConfigChecksum" -}}
 {{- $paths := list -}}

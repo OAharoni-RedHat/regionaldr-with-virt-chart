@@ -29,8 +29,16 @@ odf:
 main:
   clusterGroupName: resilient
 
+# Ramen hub resources (DRPolicy, DRPC, Placement, validation/health jobs, hub DRClusters).
+# Set resourcesEnabled false for partner CSI foundation installs that only need cluster bring-up.
+ramen:
+  # -- When false, skip DRPolicy, DRPC, Placement, DRPC health job, DRCluster validation job, and hub DRClusters.
+  resourcesEnabled: true
+
 # Edge GitOps VMs deployment (script and helm chart)
 edgeGitopsVms:
+  # -- When false, skip the edge-gitops-vms deploy Job and its RBAC/ConfigMap.
+  enabled: true
   chartVersion: "0.5.2"
 
 # Optional: install boutique from charts.validatedpatterns.io on the same cluster as edge-gitops-vms (PostSync job).

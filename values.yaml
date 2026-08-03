@@ -23,10 +23,10 @@ drCluster:
   # -- When true, render hub DRCluster CRs. When false, expect external automation
   # (e.g. ODF MirrorPeer) unless ramen.infrastructureEnabled is true.
   create: false
-  # -- S3 profile name for the primary DRCluster. Empty defaults to s3profile-<primaryClusterName>.
+  # -- S3 profile name for the primary DRCluster. Empty defaults to `s3profile-` plus the primary cluster name.
   # Must match a profile in hub Ramen config (ramen-hub-operator-config).
   primaryS3ProfileName: ""
-  # -- S3 profile name for the secondary DRCluster. Empty defaults to s3profile-<secondaryClusterName>.
+  # -- S3 profile name for the secondary DRCluster. Empty defaults to `s3profile-` plus the secondary cluster name.
   secondaryS3ProfileName: ""
 
 # Main cluster group (primary); target application namespace = global.pattern-main.clusterGroupName

@@ -22,7 +22,7 @@ The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these
 
 ## Notable changes
 
-v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-<cluster>`); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false
+v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-` plus cluster name); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false
 v0.0.4 - Add `ramen.resourcesEnabled` and `edgeGitopsVms.enabled` gates for partner CSI foundation installs
 v0.0.3 - Remove all ODF templates (moved to odf-dr-chart)
 v0.0.2 - Update edge-gitops-vms version to 0.5.2 to support setting default virt class and direct PVC volumes
@@ -49,8 +49,8 @@ v0.0.1 - Initial release
 | clusterDeployments.pullSecretKey | string | `"secret/hub/openshiftPullSecret"` |  |
 | clusterDeployments.secretRefreshInterval | string | `"90s"` |  |
 | drCluster.create | bool | `false` | When true, render hub DRCluster CRs. When false, expect external automation (e.g. ODF MirrorPeer) unless ramen.infrastructureEnabled is true. |
-| drCluster.primaryS3ProfileName | string | `""` | S3 profile name for the primary DRCluster. Empty defaults to s3profile-<primaryClusterName>. Must match a profile in hub Ramen config (ramen-hub-operator-config). |
-| drCluster.secondaryS3ProfileName | string | `""` | S3 profile name for the secondary DRCluster. Empty defaults to s3profile-<secondaryClusterName>. |
+| drCluster.primaryS3ProfileName | string | `""` | S3 profile name for the primary DRCluster. Empty defaults to `s3profile-` plus the primary cluster name. Must match a profile in hub Ramen config (ramen-hub-operator-config). |
+| drCluster.secondaryS3ProfileName | string | `""` | S3 profile name for the secondary DRCluster. Empty defaults to `s3profile-` plus the secondary cluster name. |
 | drpc.drPolicyRef.name | string | `"2m-vm"` |  |
 | drpc.healthCheck.deleteWaitDelay | int | `5` |  |
 | drpc.healthCheck.deleteWaitRetries | int | `24` |  |

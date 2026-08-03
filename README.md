@@ -1,6 +1,6 @@
 # regionaldr-with-virt
 
-![Version: 0.0.5](https://img.shields.io/badge/Version-0.0.5-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square)
 
 A Helm chart to deploy RegionalDR configuration including virtualization
 

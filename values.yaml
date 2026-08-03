@@ -18,9 +18,10 @@ global:
   clusterPlatform: AWS
 
 # Hub DRCluster CRs. Use when MirrorPeer/ODF is not creating them (e.g. partner CSI).
+# Also rendered when ramen.infrastructureEnabled is true.
 drCluster:
   # -- When true, render hub DRCluster CRs. When false, expect external automation
-  # (e.g. ODF MirrorPeer) to create them.
+  # (e.g. ODF MirrorPeer) unless ramen.infrastructureEnabled is true.
   create: false
   # -- S3 profile name for the primary DRCluster. Empty defaults to s3profile-<primaryClusterName>.
   # Must match a profile in hub Ramen config (ramen-hub-operator-config).
@@ -32,11 +33,17 @@ drCluster:
 main:
   clusterGroupName: resilient
 
-# Ramen hub resources (DRPolicy, DRPC, Placement, validation/health jobs, hub DRClusters).
-# Set resourcesEnabled false for partner CSI foundation installs that only need cluster bring-up.
+# Ramen hub resources.
+# resourcesEnabled: full set (DRPolicy, DRPC, Placement, health/validation jobs).
+# infrastructureEnabled: DRPolicy, DRCluster validation, and chart-owned DRClusters only
+# (useful when resourcesEnabled is false, e.g. partner CSI without DRPC/VMs).
 ramen:
-  # -- When false, skip DRPolicy, DRPC, Placement, DRPC health job, DRCluster validation job, and hub DRClusters.
+  # -- When false, skip DRPC, Placement, and DRPC health job. DRPolicy/validation/DRClusters
+  # still render if infrastructureEnabled is true.
   resourcesEnabled: true
+  # -- When true (or when resourcesEnabled is true), render DRPolicy, DRCluster validation,
+  # and chart-owned DRClusters (see also drCluster.create).
+  infrastructureEnabled: false
 
 # Edge GitOps VMs deployment (script and helm chart)
 edgeGitopsVms:

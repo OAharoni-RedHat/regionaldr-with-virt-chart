@@ -155,11 +155,16 @@
 {{- if eq "aws" (lower ($g.clusterPlatform | default "AWS" | toString)) -}}1{{- else -}}0{{- end -}}
 {{- end -}}
 
-{{/* Create hub DRCluster CRs from this chart (vs MirrorPeer/MCO owning them). */}}
+{{/* Create hub DRCluster CRs from this chart (vs MirrorPeer/MCO owning them).
+    Explicit drCluster.create, or infrastructureEnabled when full resourcesEnabled is off
+    (partner path). Do not auto-create when resourcesEnabled is on — MirrorPeer owns them. */}}
 {{- define "rdr.drClusterCreate" -}}
 {{- $dc := .Values.drCluster | default dict -}}
 {{- $odf := .Values.odf | default dict -}}
+{{- $ramen := .Values.ramen | default dict -}}
 {{- if index $dc "create" | default false -}}
+1
+{{- else if and (index $ramen "infrastructureEnabled" | default false) (ne "1" (include "rdr.ramenResourcesEnabled" . | trim)) -}}
 1
 {{- else if and (hasKey $odf "postInstallFixesEnabled") (not (index $odf "postInstallFixesEnabled")) -}}
 1
@@ -190,10 +195,21 @@ s3profile-{{ include "rdr.secondaryClusterName" . }}
 {{- end -}}
 {{- end -}}
 
-{{/* Ramen CR/job resources (DRPolicy, DRPC, Placement, validation/health jobs). Default on. */}}
+{{/* Full Ramen app resources: DRPC, Placement, DRPC health. Default on. */}}
 {{- define "rdr.ramenResourcesEnabled" -}}
 {{- $ramen := .Values.ramen | default dict -}}
 {{- if not (hasKey $ramen "resourcesEnabled") -}}1{{- else if index $ramen "resourcesEnabled" -}}1{{- else -}}0{{- end -}}
+{{- end -}}
+
+{{/* DRPolicy + DRCluster validation (+ chart DRClusters via drClusterCreate).
+    True when resourcesEnabled OR infrastructureEnabled. */}}
+{{- define "rdr.ramenInfrastructureEnabled" -}}
+{{- if eq "1" (include "rdr.ramenResourcesEnabled" . | trim) -}}
+1
+{{- else -}}
+{{- $ramen := .Values.ramen | default dict -}}
+{{- if index $ramen "infrastructureEnabled" | default false -}}1{{- else -}}0{{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/* Edge GitOps VMs deploy job + RBAC. Default on. */}}

@@ -1,4 +1,4 @@
-{{- if eq "1" (include "rdr.ramenResourcesEnabled" .) }}
+{{- if eq "1" (include "rdr.ramenInfrastructureEnabled" .) }}
 {{- range .Values.regionalDR }}
 {{ $clusterSet := .name }}
 {{ $clusters := .clusters }}

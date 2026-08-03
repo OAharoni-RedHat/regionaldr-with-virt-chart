@@ -23,6 +23,7 @@ The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these
 
 ## Notable changes
 
+v0.0.5 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-<cluster>`)
 v0.0.4 - Add `ramen.resourcesEnabled` and `edgeGitopsVms.enabled` gates for partner CSI foundation installs
 v0.0.3 - Remove all ODF templates (moved to odf-dr-chart)
 v0.0.2 - Update edge-gitops-vms version to 0.5.2 to support setting default virt class and direct PVC volumes

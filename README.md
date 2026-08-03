@@ -1,6 +1,6 @@
 # regionaldr-with-virt
 
-![Version: 0.0.4](https://img.shields.io/badge/Version-0.0.4-informational?style=flat-square)
+![Version: 0.0.5](https://img.shields.io/badge/Version-0.0.5-informational?style=flat-square)
 
 A Helm chart to deploy RegionalDR configuration including virtualization
 
@@ -22,6 +22,7 @@ The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these
 
 ## Notable changes
 
+v0.0.5 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-<cluster>`)
 v0.0.4 - Add `ramen.resourcesEnabled` and `edgeGitopsVms.enabled` gates for partner CSI foundation installs
 v0.0.3 - Remove all ODF templates (moved to odf-dr-chart)
 v0.0.2 - Update edge-gitops-vms version to 0.5.2 to support setting default virt class and direct PVC volumes
@@ -47,6 +48,9 @@ v0.0.1 - Initial release
 | clusterDeployments.awsSecretKey | string | `"secret/hub/aws"` |  |
 | clusterDeployments.pullSecretKey | string | `"secret/hub/openshiftPullSecret"` |  |
 | clusterDeployments.secretRefreshInterval | string | `"90s"` |  |
+| drCluster.create | bool | `false` | When true, render hub DRCluster CRs. When false, expect external automation (e.g. ODF MirrorPeer) to create them. |
+| drCluster.primaryS3ProfileName | string | `""` | S3 profile name for the primary DRCluster. Empty defaults to s3profile-<primaryClusterName>. Must match a profile in hub Ramen config (ramen-hub-operator-config). |
+| drCluster.secondaryS3ProfileName | string | `""` | S3 profile name for the secondary DRCluster. Empty defaults to s3profile-<secondaryClusterName>. |
 | drpc.drPolicyRef.name | string | `"2m-vm"` |  |
 | drpc.healthCheck.deleteWaitDelay | int | `5` |  |
 | drpc.healthCheck.deleteWaitRetries | int | `24` |  |
@@ -71,9 +75,6 @@ v0.0.1 - Initial release
 | helmUnittest.rdrMerge.mergeInstallConfig.base | object | `{}` |  |
 | helmUnittest.rdrMerge.mergeInstallConfig.over | object | `{}` |  |
 | main.clusterGroupName | string | `"resilient"` |  |
-| odf.drCluster.primaryS3ProfileName | string | `""` |  |
-| odf.drCluster.secondaryS3ProfileName | string | `""` |  |
-| odf.postInstallFixesEnabled | bool | `true` |  |
 | odfRamenTrustedCa.pollInterval | int | `15` |  |
 | odfRamenTrustedCa.ramenS3WaitSeconds | int | `3600` |  |
 | odfRamenTrustedCa.trustedCaWaitSeconds | int | `3600` |  |

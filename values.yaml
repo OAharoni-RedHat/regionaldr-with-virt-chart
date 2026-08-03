@@ -17,13 +17,16 @@ global:
   # AWS: Hive AWS creds ExternalSecret, ClusterDeployment platform.aws, Submariner gateway/credentials. Use non-AWS (e.g. BareMetal) to skip those.
   clusterPlatform: AWS
 
-# ODF post-install automation: MirrorPeer, prerequisites checker + Ramen hub trusted CA jobs/RBAC.
-odf:
-  postInstallFixesEnabled: true
-  # When postInstallFixesEnabled is false: chart creates DRCluster CRs (hub) for primary/secondary; set S3 profile names that exist in hub Ramen config.
-  drCluster:
-    primaryS3ProfileName: ""
-    secondaryS3ProfileName: ""
+# Hub DRCluster CRs. Use when MirrorPeer/ODF is not creating them (e.g. partner CSI).
+drCluster:
+  # -- When true, render hub DRCluster CRs. When false, expect external automation
+  # (e.g. ODF MirrorPeer) to create them.
+  create: false
+  # -- S3 profile name for the primary DRCluster. Empty defaults to s3profile-<primaryClusterName>.
+  # Must match a profile in hub Ramen config (ramen-hub-operator-config).
+  primaryS3ProfileName: ""
+  # -- S3 profile name for the secondary DRCluster. Empty defaults to s3profile-<secondaryClusterName>.
+  secondaryS3ProfileName: ""
 
 # Main cluster group (primary); target application namespace = global.pattern-main.clusterGroupName
 main:
@@ -122,8 +125,7 @@ ansible:
   # add Replace=true only if your Argo CD server allows sync replace (often disabled on Argo CD v3).
   configMapArgoSyncOptions: Prune=false,ServerSideApply=true
 
-# When odf.postInstallFixesEnabled is true: odf-dr-prerequisites + odf-ramen-trusted-ca jobs/RBAC below.
-# Post-sync job odf-ramen-trusted-ca (wave 9): CA from hub cluster-proxy-ca-bundle; waits for Ramen s3StoreProfiles.
+# Legacy keys retained for values compatibility; CA injection lives in opp-policy / vp-proxy.
 odfRamenTrustedCa:
   ramenS3WaitSeconds: 3600
   trustedCaWaitSeconds: 3600

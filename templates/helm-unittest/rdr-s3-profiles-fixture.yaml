@@ -1,0 +1,15 @@
+{{- if (index (index (.Values.helmUnittest | default dict) "s3Profiles" | default dict) "enabled") }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rdr-s3-profiles-fixture
+  namespace: default
+  labels:
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/component: helm-unittest
+data:
+  s3StoreProfilesCreate: {{ include "rdr.s3StoreProfilesCreate" . | trim | quote }}
+  drClusterCreate: {{ include "rdr.drClusterCreate" . | trim | quote }}
+  primaryS3ProfileName: {{ include "rdr.drClusterPrimaryS3ProfileName" . | quote }}
+  secondaryS3ProfileName: {{ include "rdr.drClusterSecondaryS3ProfileName" . | quote }}
+{{- end }}

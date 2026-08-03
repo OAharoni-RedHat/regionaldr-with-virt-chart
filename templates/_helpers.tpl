@@ -195,6 +195,11 @@ s3profile-{{ include "rdr.secondaryClusterName" . }}
 {{- end -}}
 {{- end -}}
 
+{{/* Upsert hub Ramen s3StoreProfiles — same gate as chart-owned DRClusters. */}}
+{{- define "rdr.s3StoreProfilesCreate" -}}
+{{- include "rdr.drClusterCreate" . -}}
+{{- end -}}
+
 {{/* Full Ramen app resources: DRPC, Placement, DRPC health. Default on. */}}
 {{- define "rdr.ramenResourcesEnabled" -}}
 {{- $ramen := .Values.ramen | default dict -}}

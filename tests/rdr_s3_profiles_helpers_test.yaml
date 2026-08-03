@@ -1,0 +1,79 @@
+# Helper coverage for s3StoreProfiles / DRCluster create gates and profile names.
+suite: rdr s3StoreProfiles helpers
+templates:
+  - helm-unittest/rdr-s3-profiles-fixture.yaml
+tests:
+  - it: defaults to not create profiles when resourcesEnabled
+    set:
+      helmUnittest.s3Profiles.enabled: true
+    asserts:
+      - equal:
+          path: data.s3StoreProfilesCreate
+          value: "0"
+      - equal:
+          path: data.drClusterCreate
+          value: "0"
+      - equal:
+          path: data.primaryS3ProfileName
+          value: s3profile-ocp-primary
+      - equal:
+          path: data.secondaryS3ProfileName
+          value: s3profile-ocp-secondary
+
+  - it: partner infrastructure path enables create and keeps default names
+    set:
+      helmUnittest.s3Profiles.enabled: true
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+    asserts:
+      - equal:
+          path: data.s3StoreProfilesCreate
+          value: "1"
+      - equal:
+          path: data.drClusterCreate
+          value: "1"
+      - equal:
+          path: data.primaryS3ProfileName
+          value: s3profile-ocp-primary
+
+  - it: drCluster.create enables profiles even with resourcesEnabled
+    set:
+      helmUnittest.s3Profiles.enabled: true
+      drCluster:
+        create: true
+    asserts:
+      - equal:
+          path: data.s3StoreProfilesCreate
+          value: "1"
+      - equal:
+          path: data.drClusterCreate
+          value: "1"
+
+  - it: explicit profile names override defaults
+    set:
+      helmUnittest.s3Profiles.enabled: true
+      drCluster:
+        primaryS3ProfileName: explicit-primary
+        secondaryS3ProfileName: explicit-secondary
+    asserts:
+      - equal:
+          path: data.primaryS3ProfileName
+          value: explicit-primary
+      - equal:
+          path: data.secondaryS3ProfileName
+          value: explicit-secondary
+
+  - it: s3StoreProfilesCreate matches drClusterCreate
+    set:
+      helmUnittest.s3Profiles.enabled: true
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+    asserts:
+      - equal:
+          path: data.s3StoreProfilesCreate
+          value: "1"
+      - equal:
+          path: data.drClusterCreate
+          value: "1"

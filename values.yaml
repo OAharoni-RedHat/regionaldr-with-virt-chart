@@ -28,6 +28,56 @@ drCluster:
   primaryS3ProfileName: ""
   # -- S3 profile name for the secondary DRCluster. Empty defaults to `s3profile-` plus the secondary cluster name.
   secondaryS3ProfileName: ""
+  # Upsert hub Ramen s3StoreProfiles when chart-owned DRClusters are created
+  # (same gate as drCluster.create / partner infrastructureEnabled). Defaults target hub vp-s4-storage.
+  # Does not set caCertificates — opp-policy s3CaInjector owns that.
+  s3StoreProfiles:
+    ramen:
+      # -- Namespace of the hub Ramen operator ConfigMap.
+      namespace: openshift-operators
+      # -- Hub Ramen ConfigMap name.
+      configMapName: ramen-hub-operator-config
+      # -- Key holding RamenConfig YAML.
+      configKey: ramen_manager_config.yaml
+    # -- S3 endpoint URL. Empty discovers from endpointSource Route.
+    s3CompatibleEndpoint: ""
+    # -- S3 region (required by Ramen AWS SDK).
+    s3Region: us-east-1
+    # -- When true, create missing buckets named for each profile.
+    ensureBuckets: true
+    s3SecretRef:
+      # -- Secret Ramen profiles reference (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY).
+      name: ramen-s3-credentials
+      # -- Namespace for s3SecretRef (copied from credentialsSource when different).
+      namespace: openshift-operators
+    # Hub S4 defaults (override for non-S4 object stores).
+    credentialsSource:
+      # -- Source Secret with AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY.
+      name: s4-credentials
+      # -- Namespace of credentialsSource.
+      namespace: vp-s4-storage
+    endpointSource:
+      # -- Route name for S3 API. Empty picks first Route with targetPort s3-api in routeNamespace.
+      routeName: ""
+      # -- Namespace to discover the S3 Route from.
+      routeNamespace: vp-s4-storage
+    primary:
+      # -- Bucket for the primary profile. Empty defaults to the primary profile name.
+      s3Bucket: ""
+    secondary:
+      # -- Bucket for the secondary profile. Empty defaults to the secondary profile name.
+      s3Bucket: ""
+    job:
+      # -- Argo CD sync-wave (before DRClusters at 7, before opp-policy CA injector at 10).
+      argoCDSyncWave: "6"
+      # -- Seconds to wait for Ramen ConfigMap and credentials.
+      waitSeconds: 3600
+      # -- Poll interval while waiting.
+      pollInterval: 15
+      # -- Job backoffLimit.
+      backoffLimit: 10
+      # -- Job activeDeadlineSeconds.
+      activeDeadlineSeconds: 7200
 
 # Main cluster group (primary); target application namespace = global.pattern-main.clusterGroupName
 main:
@@ -225,10 +275,13 @@ regionalDR:
         vmSupport: true
       - interval: 2m
 
-# helm-unittest only (templates/helm-unittest/rdr-merge-fixture.yaml). Stays off for normal installs.
+# helm-unittest only (templates/helm-unittest/). Stays off for normal installs.
 helmUnittest:
   rdrMerge:
     enabled: false
     mergeInstallConfig:
       base: {}
       over: {}
+  s3Profiles:
+    # -- Enable rdr-s3-profiles-fixture for helper unit tests.
+    enabled: false

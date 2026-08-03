@@ -20,9 +20,11 @@ Do not protect VMs until the DRPolicy referenced by `drpc.drPolicyRef` is ready 
 
 The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these checks before the DRPlacementControl (sync-wave **10**) is applied. Without `replicationID` on the virtualization peer class, Ramen may route VM block PVCs to VolSync instead of async VolumeReplication.
 
+When chart-owned DRClusters are created (`drCluster.create` or partner `ramen.infrastructureEnabled` with `resourcesEnabled: false`), sync-wave **6** upserts matching hub `s3StoreProfiles` into `ramen-hub-operator-config` (defaults: hub **vp-s4-storage** credentials and Route). **opp-policy** still injects `caCertificates` afterward.
+
 ## Notable changes
 
-v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-` plus cluster name); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false
+v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-` plus cluster name); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false; upsert hub Ramen `s3StoreProfiles` when chart-owned DRClusters are created (values-driven, hub S4 defaults; opp-policy still owns `caCertificates`)
 v0.0.4 - Add `ramen.resourcesEnabled` and `edgeGitopsVms.enabled` gates for partner CSI foundation installs
 v0.0.3 - Remove all ODF templates (moved to odf-dr-chart)
 v0.0.2 - Update edge-gitops-vms version to 0.5.2 to support setting default virt class and direct PVC volumes
@@ -50,6 +52,25 @@ v0.0.1 - Initial release
 | clusterDeployments.secretRefreshInterval | string | `"90s"` |  |
 | drCluster.create | bool | `false` | When true, render hub DRCluster CRs. When false, expect external automation (e.g. ODF MirrorPeer) unless ramen.infrastructureEnabled is true. |
 | drCluster.primaryS3ProfileName | string | `""` | S3 profile name for the primary DRCluster. Empty defaults to `s3profile-` plus the primary cluster name. Must match a profile in hub Ramen config (ramen-hub-operator-config). |
+| drCluster.s3StoreProfiles.credentialsSource.name | string | `"s4-credentials"` | Source Secret with AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY. |
+| drCluster.s3StoreProfiles.credentialsSource.namespace | string | `"vp-s4-storage"` | Namespace of credentialsSource. |
+| drCluster.s3StoreProfiles.endpointSource.routeName | string | `""` | Route name for S3 API. Empty picks first Route with targetPort s3-api in routeNamespace. |
+| drCluster.s3StoreProfiles.endpointSource.routeNamespace | string | `"vp-s4-storage"` | Namespace to discover the S3 Route from. |
+| drCluster.s3StoreProfiles.ensureBuckets | bool | `true` | When true, create missing buckets named for each profile. |
+| drCluster.s3StoreProfiles.job.activeDeadlineSeconds | int | `7200` | Job activeDeadlineSeconds. |
+| drCluster.s3StoreProfiles.job.argoCDSyncWave | string | `"6"` | Argo CD sync-wave (before DRClusters at 7, before opp-policy CA injector at 10). |
+| drCluster.s3StoreProfiles.job.backoffLimit | int | `10` | Job backoffLimit. |
+| drCluster.s3StoreProfiles.job.pollInterval | int | `15` | Poll interval while waiting. |
+| drCluster.s3StoreProfiles.job.waitSeconds | int | `3600` | Seconds to wait for Ramen ConfigMap and credentials. |
+| drCluster.s3StoreProfiles.primary.s3Bucket | string | `""` | Bucket for the primary profile. Empty defaults to the primary profile name. |
+| drCluster.s3StoreProfiles.ramen.configKey | string | `"ramen_manager_config.yaml"` | Key holding RamenConfig YAML. |
+| drCluster.s3StoreProfiles.ramen.configMapName | string | `"ramen-hub-operator-config"` | Hub Ramen ConfigMap name. |
+| drCluster.s3StoreProfiles.ramen.namespace | string | `"openshift-operators"` | Namespace of the hub Ramen operator ConfigMap. |
+| drCluster.s3StoreProfiles.s3CompatibleEndpoint | string | `""` | S3 endpoint URL. Empty discovers from endpointSource Route. |
+| drCluster.s3StoreProfiles.s3Region | string | `"us-east-1"` | S3 region (required by Ramen AWS SDK). |
+| drCluster.s3StoreProfiles.s3SecretRef.name | string | `"ramen-s3-credentials"` | Secret Ramen profiles reference (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY). |
+| drCluster.s3StoreProfiles.s3SecretRef.namespace | string | `"openshift-operators"` | Namespace for s3SecretRef (copied from credentialsSource when different). |
+| drCluster.s3StoreProfiles.secondary.s3Bucket | string | `""` | Bucket for the secondary profile. Empty defaults to the secondary profile name. |
 | drCluster.secondaryS3ProfileName | string | `""` | S3 profile name for the secondary DRCluster. Empty defaults to `s3profile-` plus the secondary cluster name. |
 | drpc.drPolicyRef.name | string | `"2m-vm"` |  |
 | drpc.healthCheck.deleteWaitDelay | int | `5` |  |
@@ -74,6 +95,7 @@ v0.0.1 - Initial release
 | helmUnittest.rdrMerge.enabled | bool | `false` |  |
 | helmUnittest.rdrMerge.mergeInstallConfig.base | object | `{}` |  |
 | helmUnittest.rdrMerge.mergeInstallConfig.over | object | `{}` |  |
+| helmUnittest.s3Profiles.enabled | bool | `false` | Enable rdr-s3-profiles-fixture for helper unit tests. |
 | main.clusterGroupName | string | `"resilient"` |  |
 | odfRamenTrustedCa.pollInterval | int | `15` |  |
 | odfRamenTrustedCa.ramenS3WaitSeconds | int | `3600` |  |

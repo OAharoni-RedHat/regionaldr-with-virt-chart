@@ -16,9 +16,11 @@ metadata:
     app.kubernetes.io/name: ramen-s3-profiles
     app.kubernetes.io/component: s3-store-profiles
   annotations:
+    # Sync (not PostSync): must complete before DRClusters (wave 7) and DRPolicy
+    # validation (wave 8), which require s3StoreProfiles in RamenConfig.
     argocd.argoproj.io/sync-wave: {{ ($job.argoCDSyncWave | default "6") | quote }}
     argocd.argoproj.io/sync-options: Prune=false
-    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
     checksum/script: {{ .Files.Get "files/upsert-ramen-s3-profiles.sh" | sha256sum }}
 spec:

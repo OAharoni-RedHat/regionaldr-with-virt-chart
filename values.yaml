@@ -68,7 +68,7 @@ drCluster:
       # -- Bucket for the secondary profile. Empty defaults to the secondary profile name.
       s3Bucket: ""
     job:
-      # -- Argo CD sync-wave (before DRClusters at 7, before opp-policy CA injector at 10).
+      # -- Argo CD Sync-hook wave (before DRClusters at 7 / DRPolicy validation at 8).
       argoCDSyncWave: "6"
       # -- Seconds to wait for Ramen ConfigMap and credentials.
       waitSeconds: 3600

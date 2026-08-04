@@ -20,11 +20,11 @@ Do not protect VMs until the DRPolicy referenced by `drpc.drPolicyRef` is ready 
 
 The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these checks before the DRPlacementControl (sync-wave **10**) is applied. Without `replicationID` on the virtualization peer class, Ramen may route VM block PVCs to VolSync instead of async VolumeReplication.
 
-When chart-owned DRClusters are created (`drCluster.create` or partner `ramen.infrastructureEnabled` with `resourcesEnabled: false`), sync-wave **6** upserts matching hub `s3StoreProfiles` into `ramen-hub-operator-config` (defaults: hub **vp-s4-storage** credentials and Route). **opp-policy** still injects `caCertificates` afterward.
+When chart-owned DRClusters are created (`drCluster.create` or partner `ramen.infrastructureEnabled` with `resourcesEnabled: false`), an Argo CD **Sync** hook Job at wave **6** upserts matching hub `s3StoreProfiles` into `ramen-hub-operator-config` (defaults: hub **vp-s4-storage** credentials and Route) **before** DRClusters (wave 7) and DRPolicy validation (wave 8). **opp-policy** still injects `caCertificates` afterward.
 
 ## Notable changes
 
-v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-` plus cluster name); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false; upsert hub Ramen `s3StoreProfiles` when chart-owned DRClusters are created (values-driven, hub S4 defaults; opp-policy still owns `caCertificates`)
+v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-` plus cluster name); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false; upsert hub Ramen `s3StoreProfiles` when chart-owned DRClusters are created (values-driven, hub S4 defaults; opp-policy still owns `caCertificates`); Sync-hook (not PostSync) so profiles exist before DRPolicy validation
 v0.0.4 - Add `ramen.resourcesEnabled` and `edgeGitopsVms.enabled` gates for partner CSI foundation installs
 v0.0.3 - Remove all ODF templates (moved to odf-dr-chart)
 v0.0.2 - Update edge-gitops-vms version to 0.5.2 to support setting default virt class and direct PVC volumes

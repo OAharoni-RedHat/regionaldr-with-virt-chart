@@ -64,6 +64,12 @@ tests:
           path: metadata.annotations["argocd.argoproj.io/sync-wave"]
           value: "6"
       - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook"]
+          value: Sync
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook-delete-policy"]
+          value: BeforeHookCreation
+      - equal:
           path: spec.template.spec.containers[0].env[?(@.name=="PRIMARY_PROFILE_NAME")].value
           value: s3profile-ocp-primary
       - equal:

@@ -163,13 +163,13 @@ ensure_bucket() {
 	die "Failed to create bucket ${bucket}"
 }
 
-# Upsert one profile into either top-level or kubeObjectProtection list.
+# Upsert one profile into top-level s3StoreProfiles (what DRCluster/DRPolicy use).
 # Preserves caCertificates and other unknown fields when updating.
+# Does not write kubeObjectProtection.s3StoreProfiles — not part of current RamenConfig.
 upsert_one() {
 	local f="$1"
-	local list_kind="$2" # top | kop
-	local name="$3"
-	local bucket="$4"
+	local name="$2"
+	local bucket="$3"
 
 	export PROFILE_NAME="$name"
 	export PROFILE_BUCKET="$bucket"
@@ -178,51 +178,27 @@ upsert_one() {
 	export PROFILE_SECRET_NAME="$S3_SECRET_NAME"
 	export PROFILE_SECRET_NS="$S3_SECRET_NAMESPACE"
 
-	if [[ "$list_kind" == "kop" ]]; then
-		yq eval -i '.kubeObjectProtection = (.kubeObjectProtection // {})' "$f"
-		yq eval -i '.kubeObjectProtection.s3StoreProfiles = (.kubeObjectProtection.s3StoreProfiles // [])' "$f"
-	else
-		yq eval -i '.s3StoreProfiles = (.s3StoreProfiles // [])' "$f"
-	fi
+	yq eval -i '.s3StoreProfiles = (.s3StoreProfiles // [])' "$f"
 
 	local idx=""
-	if [[ "$list_kind" == "kop" ]]; then
-		idx=$(yq eval '
-			(.kubeObjectProtection.s3StoreProfiles // [])
-			| to_entries
-			| map(select(.value.s3ProfileName == strenv(PROFILE_NAME)))
-			| .[0].key // ""
-		' "$f")
-	else
-		idx=$(yq eval '
-			(.s3StoreProfiles // [])
-			| to_entries
-			| map(select(.value.s3ProfileName == strenv(PROFILE_NAME)))
-			| .[0].key // ""
-		' "$f")
-	fi
+	idx=$(yq eval '
+		(.s3StoreProfiles // [])
+		| to_entries
+		| map(select(.value.s3ProfileName == strenv(PROFILE_NAME)))
+		| .[0].key // ""
+	' "$f")
 
 	if [[ -n "$idx" && "$idx" != "null" ]]; then
-		log "  Updating ${list_kind} profile ${name}[${idx}]"
-		if [[ "$list_kind" == "kop" ]]; then
-			yq eval -i "
-				.kubeObjectProtection.s3StoreProfiles[${idx}].s3Bucket = strenv(PROFILE_BUCKET) |
-				.kubeObjectProtection.s3StoreProfiles[${idx}].s3CompatibleEndpoint = strenv(PROFILE_ENDPOINT) |
-				.kubeObjectProtection.s3StoreProfiles[${idx}].s3Region = strenv(PROFILE_REGION) |
-				.kubeObjectProtection.s3StoreProfiles[${idx}].s3SecretRef.name = strenv(PROFILE_SECRET_NAME) |
-				.kubeObjectProtection.s3StoreProfiles[${idx}].s3SecretRef.namespace = strenv(PROFILE_SECRET_NS)
-			" "$f"
-		else
-			yq eval -i "
-				.s3StoreProfiles[${idx}].s3Bucket = strenv(PROFILE_BUCKET) |
-				.s3StoreProfiles[${idx}].s3CompatibleEndpoint = strenv(PROFILE_ENDPOINT) |
-				.s3StoreProfiles[${idx}].s3Region = strenv(PROFILE_REGION) |
-				.s3StoreProfiles[${idx}].s3SecretRef.name = strenv(PROFILE_SECRET_NAME) |
-				.s3StoreProfiles[${idx}].s3SecretRef.namespace = strenv(PROFILE_SECRET_NS)
-			" "$f"
-		fi
+		log "  Updating profile ${name}[${idx}]"
+		yq eval -i "
+			.s3StoreProfiles[${idx}].s3Bucket = strenv(PROFILE_BUCKET) |
+			.s3StoreProfiles[${idx}].s3CompatibleEndpoint = strenv(PROFILE_ENDPOINT) |
+			.s3StoreProfiles[${idx}].s3Region = strenv(PROFILE_REGION) |
+			.s3StoreProfiles[${idx}].s3SecretRef.name = strenv(PROFILE_SECRET_NAME) |
+			.s3StoreProfiles[${idx}].s3SecretRef.namespace = strenv(PROFILE_SECRET_NS)
+		" "$f"
 	else
-		log "  Appending ${list_kind} profile ${name}"
+		log "  Appending profile ${name}"
 		local new_profile
 		new_profile=$(yq eval -n '{
 			"s3ProfileName": strenv(PROFILE_NAME),
@@ -235,11 +211,7 @@ upsert_one() {
 			}
 		}')
 		printf '%s\n' "$new_profile" >"$WORK_DIR/new-profile.yaml"
-		if [[ "$list_kind" == "kop" ]]; then
-			yq eval -i ".kubeObjectProtection.s3StoreProfiles += [load(\"${WORK_DIR}/new-profile.yaml\")]" "$f"
-		else
-			yq eval -i ".s3StoreProfiles += [load(\"${WORK_DIR}/new-profile.yaml\")]" "$f"
-		fi
+		yq eval -i ".s3StoreProfiles += [load(\"${WORK_DIR}/new-profile.yaml\")]" "$f"
 	fi
 }
 
@@ -255,15 +227,11 @@ apiVersion: ramendr.openshift.io/v1alpha1
 kind: RamenConfig
 ramenControllerType: dr-hub
 s3StoreProfiles: []
-kubeObjectProtection:
-  s3StoreProfiles: []
 EOF
 	fi
 
-	upsert_one "$f" "top" "$PRIMARY_PROFILE_NAME" "$PRIMARY_BUCKET"
-	upsert_one "$f" "top" "$SECONDARY_PROFILE_NAME" "$SECONDARY_BUCKET"
-	upsert_one "$f" "kop" "$PRIMARY_PROFILE_NAME" "$PRIMARY_BUCKET"
-	upsert_one "$f" "kop" "$SECONDARY_PROFILE_NAME" "$SECONDARY_BUCKET"
+	upsert_one "$f" "$PRIMARY_PROFILE_NAME" "$PRIMARY_BUCKET"
+	upsert_one "$f" "$SECONDARY_PROFILE_NAME" "$SECONDARY_BUCKET"
 
 	oc get configmap "$RAMEN_CONFIGMAP" -n "$RAMEN_NAMESPACE" -o yaml >"$WORK_DIR/cm.yaml"
 	# load_str embeds the YAML file as a string value for the data key

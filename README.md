@@ -20,7 +20,7 @@ Do not protect VMs until the DRPolicy referenced by `drpc.drPolicyRef` is ready 
 
 The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these checks before the DRPlacementControl (sync-wave **10**) is applied. Without `replicationID` on the virtualization peer class, Ramen may route VM block PVCs to VolSync instead of async VolumeReplication.
 
-When chart-owned DRClusters are created (`drCluster.create` or partner `ramen.infrastructureEnabled` with `resourcesEnabled: false`), an Argo CD **Sync** hook Job at wave **6** upserts matching hub `s3StoreProfiles` into `ramen-hub-operator-config` (defaults: hub **vp-s4-storage** credentials and Route) **before** DRClusters (wave 7) and DRPolicy validation (wave 8). **opp-policy** still injects `caCertificates` afterward.
+When chart-owned DRClusters are created (`drCluster.create` or partner `ramen.infrastructureEnabled` with `resourcesEnabled: false`), an Argo CD **Sync** hook Job at wave **6** upserts matching hub top-level `s3StoreProfiles` (primary + secondary only) into `ramen-hub-operator-config` (defaults: hub **vp-s4-storage** credentials and Route) **before** DRClusters (wave 7) and DRPolicy validation (wave 8). **opp-policy** still injects `caCertificates` afterward.
 
 ## Notable changes
 
@@ -58,7 +58,7 @@ v0.0.1 - Initial release
 | drCluster.s3StoreProfiles.endpointSource.routeNamespace | string | `"vp-s4-storage"` | Namespace to discover the S3 Route from. |
 | drCluster.s3StoreProfiles.ensureBuckets | bool | `true` | When true, create missing buckets named for each profile. |
 | drCluster.s3StoreProfiles.job.activeDeadlineSeconds | int | `7200` | Job activeDeadlineSeconds. |
-| drCluster.s3StoreProfiles.job.argoCDSyncWave | string | `"6"` | Argo CD sync-wave (before DRClusters at 7, before opp-policy CA injector at 10). |
+| drCluster.s3StoreProfiles.job.argoCDSyncWave | string | `"6"` | Argo CD Sync-hook wave (before DRClusters at 7 / DRPolicy validation at 8). |
 | drCluster.s3StoreProfiles.job.backoffLimit | int | `10` | Job backoffLimit. |
 | drCluster.s3StoreProfiles.job.pollInterval | int | `15` | Poll interval while waiting. |
 | drCluster.s3StoreProfiles.job.waitSeconds | int | `3600` | Seconds to wait for Ramen ConfigMap and credentials. |

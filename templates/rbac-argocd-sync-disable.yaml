@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-sync-disable
+  namespace: open-cluster-management
+  labels:
+    app.kubernetes.io/name: argocd-sync-disable
+    app.kubernetes.io/component: argocd-sync-control
+  annotations:
+    argocd.argoproj.io/sync-wave: "13"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-sync-disable
+  labels:
+    app.kubernetes.io/name: argocd-sync-disable
+    app.kubernetes.io/component: argocd-sync-control
+  annotations:
+    argocd.argoproj.io/sync-wave: "13"
+rules:
+# Remove Application.spec.syncPolicy.automated after settlement
+- apiGroups: ["argoproj.io"]
+  resources: ["applications"]
+  verbs: ["get", "list", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-sync-disable
+  labels:
+    app.kubernetes.io/name: argocd-sync-disable
+    app.kubernetes.io/component: argocd-sync-control
+  annotations:
+    argocd.argoproj.io/sync-wave: "13"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-sync-disable
+subjects:
+- kind: ServiceAccount
+  name: argocd-sync-disable
+  namespace: open-cluster-management

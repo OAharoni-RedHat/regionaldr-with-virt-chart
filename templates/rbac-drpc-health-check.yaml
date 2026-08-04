@@ -3,21 +3,21 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: drpc-health-check-argocd-sync-control
+  name: drpc-health-check
   namespace: open-cluster-management
   labels:
     app.kubernetes.io/name: drpc-health-check
-    app.kubernetes.io/component: argocd-sync-control
+    app.kubernetes.io/component: health-check
   annotations:
     argocd.argoproj.io/sync-wave: "12"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: drpc-health-check-argocd-sync-control
+  name: drpc-health-check
   labels:
     app.kubernetes.io/name: drpc-health-check
-    app.kubernetes.io/component: argocd-sync-control
+    app.kubernetes.io/component: health-check
   annotations:
     argocd.argoproj.io/sync-wave: "12"
 rules:
@@ -36,7 +36,7 @@ rules:
 - apiGroups: ["apps"]
   resources: ["deployments", "replicasets", "statefulsets"]
   verbs: ["get", "list"]
-# Permissions for ArgoCD Application management
+# Hard-refresh annotation on Application during recipe-failure recovery
 - apiGroups: ["argoproj.io"]
   resources: ["applications"]
   verbs: ["get", "list", "patch", "update"]
@@ -44,19 +44,18 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: drpc-health-check-argocd-sync-control
+  name: drpc-health-check
   labels:
     app.kubernetes.io/name: drpc-health-check
-    app.kubernetes.io/component: argocd-sync-control
+    app.kubernetes.io/component: health-check
   annotations:
     argocd.argoproj.io/sync-wave: "12"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: drpc-health-check-argocd-sync-control
+  name: drpc-health-check
 subjects:
 - kind: ServiceAccount
-  name: drpc-health-check-argocd-sync-control
+  name: drpc-health-check
   namespace: open-cluster-management
-
 {{- end }}

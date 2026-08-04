@@ -3,11 +3,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: drpc-health-check-argocd-sync-disable
+  name: drpc-health-check
   namespace: open-cluster-management
   labels:
     app.kubernetes.io/name: drpc-health-check
-    app.kubernetes.io/component: argocd-sync-control
+    app.kubernetes.io/component: health-check
   annotations:
     argocd.argoproj.io/sync-wave: "12"
     argocd.argoproj.io/sync-options: Prune=false
@@ -24,7 +24,7 @@ spec:
         {{- include "rdr.ansibleJobPodAnnotations" . | nindent 8 }}
     spec:
       {{- $drpcHC := index (.Values.drpc | default dict) "healthCheck" | default dict }}
-      serviceAccountName: drpc-health-check-argocd-sync-control
+      serviceAccountName: drpc-health-check
       restartPolicy: Never
       containers:
       - name: drpc-health-checker

@@ -22,9 +22,11 @@ The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these
 
 When chart-owned DRClusters are created (`drCluster.create` or partner `ramen.infrastructureEnabled` with `resourcesEnabled: false`), an Argo CD **Sync** hook Job at wave **6** upserts matching hub top-level `s3StoreProfiles` (primary + secondary only) into `ramen-hub-operator-config` (defaults: hub **vp-s4-storage** credentials and Route) **before** DRClusters (wave 7) and DRPolicy validation (wave 8). **opp-policy** still injects `caCertificates` afterward.
 
+PostSync settlement: `drpc-health-check` (wave **12**, only when `ramen.resourcesEnabled`) waits for DRPC health. `argocd-sync-disable` (wave **13**, always) then removes Application automated sync so the regional-dr app stops reconciling after things settle — including `drpartner-s4` (`resourcesEnabled: false`) and `drpartner-minimal` (both `resourcesEnabled` and `infrastructureEnabled` false).
+
 ## Notable changes
 
-v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-` plus cluster name); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false; upsert hub Ramen `s3StoreProfiles` when chart-owned DRClusters are created (values-driven, hub S4 defaults; opp-policy still owns `caCertificates`); Sync-hook (not PostSync) so profiles exist before DRPolicy validation
+v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-` plus cluster name); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false; upsert hub Ramen `s3StoreProfiles` when chart-owned DRClusters are created (values-driven, hub S4 defaults; opp-policy still owns `caCertificates`); Sync-hook (not PostSync) so profiles exist before DRPolicy validation; split DRPC health check from Argo CD sync-disable (sync-disable always runs after settlement)
 v0.0.4 - Add `ramen.resourcesEnabled` and `edgeGitopsVms.enabled` gates for partner CSI foundation installs
 v0.0.3 - Remove all ODF templates (moved to odf-dr-chart)
 v0.0.2 - Update edge-gitops-vms version to 0.5.2 to support setting default virt class and direct PVC volumes

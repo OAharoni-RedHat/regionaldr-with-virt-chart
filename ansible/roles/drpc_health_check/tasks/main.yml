@@ -8,10 +8,6 @@
 - name: DRPC validation (repeat until healthy or max attempts)
   ansible.builtin.include_tasks: drpc_validation_loop.yml
 
-- name: Disable Argo CD automated sync (once, after DRPC is healthy)
-  ansible.builtin.include_tasks: disable_argocd_sync.yml
-  when: drpc_all_passed | default(false)
-
 - name: Fail after exhausting DRPC attempts
   ansible.builtin.fail:
     msg: >-

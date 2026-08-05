@@ -1,12 +1,5 @@
-{{- /* Hub DRCluster CRs when ODF chart automation is off (no MirrorPeer); DRPolicy still references these managed cluster names. */}}
-{{- if ne "1" (include "rdr.odfPostInstallFixesEnabled" . | trim) }}
-{{- $odf := .Values.odf | default dict }}
-{{- $dc := index $odf "drCluster" | default dict }}
-{{- $pS3 := index $dc "primaryS3ProfileName" | default "" | toString }}
-{{- $sS3 := index $dc "secondaryS3ProfileName" | default "" | toString }}
-{{- if or (eq $pS3 "") (eq $sS3 "") }}
-{{- fail "When odf.postInstallFixesEnabled is false, set odf.drCluster.primaryS3ProfileName and odf.drCluster.secondaryS3ProfileName to the hub Ramen S3 profile names for each cluster." }}
-{{- end }}
+{{- /* Hub DRCluster CRs when create=true (MirrorPeer/MCO not owning them). Independent of ramen.resourcesEnabled. */}}
+{{- if eq "1" (include "rdr.drClusterCreate" . | trim) }}
 {{- $primary := include "rdr.primaryClusterName" . }}
 {{- $secondary := include "rdr.secondaryClusterName" . }}
 ---
@@ -19,7 +12,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "7"
 spec:
-  s3ProfileName: {{ $pS3 | quote }}
+  s3ProfileName: {{ include "rdr.drClusterPrimaryS3ProfileName" . | quote }}
 ---
 apiVersion: ramendr.openshift.io/v1alpha1
 kind: DRCluster
@@ -30,5 +23,5 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "7"
 spec:
-  s3ProfileName: {{ $sS3 | quote }}
+  s3ProfileName: {{ include "rdr.drClusterSecondaryS3ProfileName" . | quote }}
 {{- end }}

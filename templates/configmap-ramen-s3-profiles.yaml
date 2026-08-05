@@ -1,0 +1,15 @@
+{{- if eq "1" (include "rdr.s3StoreProfilesCreate" . | trim) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ramen-s3-profiles-script
+  namespace: open-cluster-management
+  labels:
+    app.kubernetes.io/name: ramen-s3-profiles
+    app.kubernetes.io/component: s3-store-profiles
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ ((((.Values.drCluster | default dict).s3StoreProfiles | default dict).job | default dict).argoCDSyncWave | default "6") | quote }}
+data:
+  upsert-ramen-s3-profiles.sh: |
+{{ .Files.Get "files/upsert-ramen-s3-profiles.sh" | indent 4 }}
+{{- end }}

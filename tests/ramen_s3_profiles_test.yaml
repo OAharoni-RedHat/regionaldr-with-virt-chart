@@ -1,0 +1,269 @@
+suite: Ramen s3StoreProfiles upsert job
+templates:
+  - job-ramen-s3-profiles.yaml
+  - rbac-ramen-s3-profiles.yaml
+  - configmap-ramen-s3-profiles.yaml
+  - drclusters_hub.yaml
+tests:
+  - it: does not render when resourcesEnabled (ODF / MirrorPeer owns profiles)
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: does not render when infrastructureEnabled alone with resourcesEnabled true
+    set:
+      ramen:
+        resourcesEnabled: true
+        infrastructureEnabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: does not render when resourcesEnabled false without infrastructureEnabled
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders ConfigMap for partner infrastructure path
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+    templates:
+      - configmap-ramen-s3-profiles.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: ramen-s3-profiles-script
+      - equal:
+          path: kind
+          value: ConfigMap
+      - isNotNull:
+          path: data["upsert-ramen-s3-profiles.sh"]
+
+  - it: Job uses sync-wave 6 and hub S4 defaults
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+    templates:
+      - job-ramen-s3-profiles.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: kind
+          value: Job
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "6"
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook"]
+          value: Sync
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook-delete-policy"]
+          value: BeforeHookCreation
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="PRIMARY_PROFILE_NAME")].value
+          value: s3profile-ocp-primary
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="SECONDARY_PROFILE_NAME")].value
+          value: s3profile-ocp-secondary
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="PRIMARY_BUCKET")].value
+          value: ""
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="S3_ENDPOINT")].value
+          value: ""
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="S3_REGION")].value
+          value: us-east-1
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ENSURE_BUCKETS")].value
+          value: "true"
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="CREDENTIALS_SOURCE_NAME")].value
+          value: s4-credentials
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="CREDENTIALS_SOURCE_NAMESPACE")].value
+          value: vp-s4-storage
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ENDPOINT_ROUTE_NAMESPACE")].value
+          value: vp-s4-storage
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="S3_SECRET_NAME")].value
+          value: ramen-s3-credentials
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="RAMEN_NAMESPACE")].value
+          value: openshift-operators
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: ramen-s3-profiles
+
+  - it: Job honors values-driven non-S4 overrides
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+      drCluster:
+        primaryS3ProfileName: custom-primary-profile
+        secondaryS3ProfileName: custom-secondary-profile
+        s3StoreProfiles:
+          s3CompatibleEndpoint: https://s3.example.com
+          s3Region: eu-west-1
+          ensureBuckets: false
+          s3SecretRef:
+            name: external-s3-creds
+            namespace: openshift-dr-system
+          credentialsSource:
+            name: external-s3-creds
+            namespace: openshift-dr-system
+          endpointSource:
+            routeName: ignored-when-endpoint-set
+            routeNamespace: other-ns
+          primary:
+            s3Bucket: ramen-bucket-a
+          secondary:
+            s3Bucket: ramen-bucket-b
+          ramen:
+            namespace: openshift-dr-system
+            configMapName: ramen-hub-operator-config
+            configKey: ramen_manager_config.yaml
+          job:
+            argoCDSyncWave: "5"
+            waitSeconds: 120
+            pollInterval: 10
+    templates:
+      - job-ramen-s3-profiles.yaml
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "5"
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="PRIMARY_PROFILE_NAME")].value
+          value: custom-primary-profile
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="SECONDARY_PROFILE_NAME")].value
+          value: custom-secondary-profile
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="PRIMARY_BUCKET")].value
+          value: ramen-bucket-a
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="SECONDARY_BUCKET")].value
+          value: ramen-bucket-b
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="S3_ENDPOINT")].value
+          value: https://s3.example.com
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="S3_REGION")].value
+          value: eu-west-1
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ENSURE_BUCKETS")].value
+          value: "false"
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="S3_SECRET_NAME")].value
+          value: external-s3-creds
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="S3_SECRET_NAMESPACE")].value
+          value: openshift-dr-system
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="CREDENTIALS_SOURCE_NAME")].value
+          value: external-s3-creds
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="RAMEN_NAMESPACE")].value
+          value: openshift-dr-system
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="WAIT_SECONDS")].value
+          value: "120"
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="POLL_INTERVAL")].value
+          value: "10"
+
+  - it: renders RBAC for partner path
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+    templates:
+      - rbac-ramen-s3-profiles.yaml
+    asserts:
+      - hasDocuments:
+          count: 3
+
+  - it: renders when drCluster.create is true even with resourcesEnabled
+    set:
+      drCluster:
+        create: true
+    templates:
+      - job-ramen-s3-profiles.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: kind
+          value: Job
+
+  - it: DRClusters render two documents on partner path
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+    templates:
+      - drclusters_hub.yaml
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: primary DRCluster s3ProfileName matches Job PRIMARY_PROFILE_NAME
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+    templates:
+      - drclusters_hub.yaml
+    documentSelector:
+      path: metadata.name
+      value: ocp-primary
+    asserts:
+      - equal:
+          path: spec.s3ProfileName
+          value: s3profile-ocp-primary
+
+  - it: secondary DRCluster s3ProfileName matches Job SECONDARY_PROFILE_NAME
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+    templates:
+      - drclusters_hub.yaml
+    documentSelector:
+      path: metadata.name
+      value: ocp-secondary
+    asserts:
+      - equal:
+          path: spec.s3ProfileName
+          value: s3profile-ocp-secondary
+
+  - it: custom profile names align on DRCluster and Job
+    set:
+      ramen:
+        resourcesEnabled: false
+        infrastructureEnabled: true
+      drCluster:
+        primaryS3ProfileName: partner-s3-a
+        secondaryS3ProfileName: partner-s3-b
+    templates:
+      - drclusters_hub.yaml
+    documentSelector:
+      path: metadata.name
+      value: ocp-primary
+    asserts:
+      - equal:
+          path: spec.s3ProfileName
+          value: partner-s3-a

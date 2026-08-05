@@ -1,3 +1,4 @@
+{{- if eq "1" (include "rdr.ramenResourcesEnabled" .) }}
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -16,3 +17,4 @@ spec:
   prioritizerPolicy:
     mode: Additive
   spreadPolicy: {}
+{{- end }}

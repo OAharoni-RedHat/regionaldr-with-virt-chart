@@ -155,10 +155,72 @@
 {{- if eq "aws" (lower ($g.clusterPlatform | default "AWS" | toString)) -}}1{{- else -}}0{{- end -}}
 {{- end -}}
 
-{{/* ODF post-install automation enabled: gate for DRCluster / DRPolicy conditional blocks. */}}
-{{- define "rdr.odfPostInstallFixesEnabled" -}}
+{{/* Create hub DRCluster CRs from this chart (vs MirrorPeer/MCO owning them).
+    Explicit drCluster.create, or infrastructureEnabled when full resourcesEnabled is off
+    (partner path). Do not auto-create when resourcesEnabled is on — MirrorPeer owns them. */}}
+{{- define "rdr.drClusterCreate" -}}
+{{- $dc := .Values.drCluster | default dict -}}
 {{- $odf := .Values.odf | default dict -}}
-{{- if not (hasKey $odf "postInstallFixesEnabled") -}}1{{- else if index $odf "postInstallFixesEnabled" -}}1{{- else -}}0{{- end -}}
+{{- $ramen := .Values.ramen | default dict -}}
+{{- if index $dc "create" | default false -}}
+1
+{{- else if and (index $ramen "infrastructureEnabled" | default false) (ne "1" (include "rdr.ramenResourcesEnabled" . | trim)) -}}
+1
+{{- else if and (hasKey $odf "postInstallFixesEnabled") (not (index $odf "postInstallFixesEnabled")) -}}
+1
+{{- else -}}
+0
+{{- end -}}
+{{- end -}}
+
+{{- define "rdr.drClusterPrimaryS3ProfileName" -}}
+{{- $dc := .Values.drCluster | default dict -}}
+{{- $legacy := index ((.Values.odf | default dict).drCluster | default dict) "primaryS3ProfileName" | default "" -}}
+{{- $explicit := $dc.primaryS3ProfileName | default $legacy | toString -}}
+{{- if $explicit -}}
+{{- $explicit -}}
+{{- else -}}
+s3profile-{{ include "rdr.primaryClusterName" . }}
+{{- end -}}
+{{- end -}}
+
+{{- define "rdr.drClusterSecondaryS3ProfileName" -}}
+{{- $dc := .Values.drCluster | default dict -}}
+{{- $legacy := index ((.Values.odf | default dict).drCluster | default dict) "secondaryS3ProfileName" | default "" -}}
+{{- $explicit := $dc.secondaryS3ProfileName | default $legacy | toString -}}
+{{- if $explicit -}}
+{{- $explicit -}}
+{{- else -}}
+s3profile-{{ include "rdr.secondaryClusterName" . }}
+{{- end -}}
+{{- end -}}
+
+{{/* Upsert hub Ramen s3StoreProfiles — same gate as chart-owned DRClusters. */}}
+{{- define "rdr.s3StoreProfilesCreate" -}}
+{{- include "rdr.drClusterCreate" . -}}
+{{- end -}}
+
+{{/* Full Ramen app resources: DRPC, Placement, DRPC health. Default on. */}}
+{{- define "rdr.ramenResourcesEnabled" -}}
+{{- $ramen := .Values.ramen | default dict -}}
+{{- if not (hasKey $ramen "resourcesEnabled") -}}1{{- else if index $ramen "resourcesEnabled" -}}1{{- else -}}0{{- end -}}
+{{- end -}}
+
+{{/* DRPolicy + DRCluster validation (+ chart DRClusters via drClusterCreate).
+    True when resourcesEnabled OR infrastructureEnabled. */}}
+{{- define "rdr.ramenInfrastructureEnabled" -}}
+{{- if eq "1" (include "rdr.ramenResourcesEnabled" . | trim) -}}
+1
+{{- else -}}
+{{- $ramen := .Values.ramen | default dict -}}
+{{- if index $ramen "infrastructureEnabled" | default false -}}1{{- else -}}0{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/* Edge GitOps VMs deploy job + RBAC. Default on. */}}
+{{- define "rdr.edgeGitopsVmsEnabled" -}}
+{{- $egv := .Values.edgeGitopsVms | default dict -}}
+{{- if not (hasKey $egv "enabled") -}}1{{- else if index $egv "enabled" -}}1{{- else -}}0{{- end -}}
 {{- end -}}
 
 {{/* Stable checksum of packaged ansible/ (excludes dotfiles). Drives Job annotation drift on chart updates. */}}

@@ -266,3 +266,14 @@ checksum/regionaldr-ansible: {{ include "rdr.ansibleConfigChecksum" . | quote }}
 {{- define "rdr.ansibleConfigMapArgoSyncOptions" -}}
 {{- .Values.ansible.configMapArgoSyncOptions | default "Prune=false,ServerSideApply=true" -}}
 {{- end -}}
+
+{{/*
+Namespace of the Argo CD Application CR (validated-patterns app-of-apps child).
+
+Do NOT use global.namespace / $ARGOCD_APP_NAMESPACE: Argo CD substitutes that with
+spec.destination.namespace (e.g. regional-dr), not metadata.namespace of the
+Application (e.g. ramendr-starter-kit-drpartner-s4).
+*/}}
+{{- define "rdr.argocdApplicationNamespace" -}}
+{{- printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit") ((index (.Values.clusterGroup | default dict) "name") | default "hub") -}}
+{{- end -}}

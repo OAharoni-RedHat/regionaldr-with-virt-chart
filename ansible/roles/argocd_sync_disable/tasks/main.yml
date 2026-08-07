@@ -16,8 +16,9 @@
       - (argocd_app_namespace | string | length) > 0
       - (argocd_app_namespace | string) != "$ARGOCD_APP_NAMESPACE"
     fail_msg: >-
-      argocd_app_namespace must be the live Argo CD Application namespace
-      (global.namespace / $ARGOCD_APP_NAMESPACE), not empty or unsubstituted.
+      argocd_app_namespace must be the Argo CD Application CR namespace
+      (global.pattern-clusterGroup.name, e.g. ramendr-starter-kit-drpartner-s4),
+      not the destination namespace (regional-dr / $ARGOCD_APP_NAMESPACE).
 
 - name: Look up regional-dr Argo CD Application
   ansible.builtin.command:
@@ -37,7 +38,8 @@
     msg: >-
       Cannot disable automated sync — could not read Application
       {{ argocd_app_name }}/{{ argocd_app_namespace }} (rc={{ drpc_argocd_app_get.rc }}).
-      Check ARGOCD_APP_NAMESPACE (should be global.namespace from Argo CD).
+      Check ARGOCD_APP_NAMESPACE (should be global.pattern-clusterGroup.name,
+      not destination regional-dr / $ARGOCD_APP_NAMESPACE).
   when: drpc_argocd_app_get.rc != 0
 
 - name: Ensure hub Application ignores syncPolicy.automated drift on regional-dr

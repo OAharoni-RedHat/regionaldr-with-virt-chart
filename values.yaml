@@ -12,10 +12,12 @@ clusterCaMgt:
 
 global:
   clusterDomain: cluster.example.com
-  # Pattern name. With Argo CD, Application namespace comes from global.namespace
-  # ($ARGOCD_APP_NAMESPACE). Fallback for Jobs: global.pattern-clusterGroup.name.
+  # Pattern name. Application CR namespace for PostSync Jobs is
+  # global.pattern-clusterGroup.name (NOT global.namespace).
+  # Argo $ARGOCD_APP_NAMESPACE / global.namespace is the destination namespace
+  # (e.g. regional-dr), not where the Application CR lives.
   pattern: ramendr-starter-kit-hub
-  # Set by Argo CD to $ARGOCD_APP_NAMESPACE (substituted to the Application namespace).
+  # Set by Argo CD to $ARGOCD_APP_NAMESPACE → destination namespace only.
   # namespace: ""
   # Parent hub Application namespace (validated patterns app-of-apps).
   vpArgoNamespace: vp-gitops
@@ -84,9 +86,9 @@ drCluster:
       # -- Job activeDeadlineSeconds.
       activeDeadlineSeconds: 7200
 
-# Main cluster group name used by some chart defaults. Application namespace for
-# PostSync Jobs prefers global.namespace, then global.pattern-clusterGroup.name
-# (hub BOM). This spoke-oriented default is not used for ARGOCD_APP_NAMESPACE.
+# Main cluster group name used by some chart defaults. Application CR namespace
+# for PostSync Jobs is global.pattern-clusterGroup.name (hub BOM), not this
+# spoke-oriented default and not global.namespace / $ARGOCD_APP_NAMESPACE.
 main:
   clusterGroupName: resilient
 
@@ -176,9 +178,10 @@ drpc:
   vmStorageClassName: ocs-storagecluster-ceph-rbd-virtualization
   # PostSync Job drpc-health-check (resourcesEnabled only). Argo CD sync disable is a
   # separate PostSync Job (argocd-sync-disable, wave 13) and always runs after settlement.
-  # Sync-disable targets global.namespace (Argo $ARGOCD_APP_NAMESPACE) and patches the
-  # hub Application (global.vpArgoNamespace) with ignoreDifferences on
-  # Application/regional-dr /spec/syncPolicy/automated so parent selfHeal cannot re-enable it.
+  # Sync-disable looks up the Application CR in pattern-clusterGroup.name (not destination
+  # global.namespace) and patches the hub Application (global.vpArgoNamespace) with
+  # ignoreDifferences on Application/regional-dr /spec/syncPolicy/automated so parent
+  # selfHeal cannot re-enable it.
   healthCheck:
     maxAttempts: 30
     retryDelaySeconds: 30

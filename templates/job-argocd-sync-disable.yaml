@@ -56,17 +56,13 @@ spec:
         env:
         - name: ARGOCD_APP_NAME
           value: "regional-dr"
-        # Prefer Argo-substituted global.namespace; fall back to pattern-clusterGroup.name
-        # (hub BOM name). Do not use main.clusterGroupName — that is the spoke group.
+        # Application CR namespace = pattern-clusterGroup.name (NOT destination /
+        # $ARGOCD_APP_NAMESPACE, which is regional-dr).
         - name: ARGOCD_APP_NAMESPACE
-          {{- $appNs := .Values.global.namespace | default "" }}
-          {{- if or (eq $appNs "") (eq $appNs "$ARGOCD_APP_NAMESPACE") }}
-          {{- $appNs = printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit") ((index (.Values.clusterGroup | default dict) "name") | default "hub") }}
-          {{- end }}
-          value: {{ $appNs | quote }}
-        # Hub app-of-apps name matches the child Applications namespace in validated patterns.
+          value: {{ include "rdr.argocdApplicationNamespace" . | quote }}
+        # Hub app-of-apps name matches the child Applications namespace.
         - name: ARGOCD_HUB_APP_NAME
-          value: {{ $appNs | quote }}
+          value: {{ include "rdr.argocdApplicationNamespace" . | quote }}
         - name: ARGOCD_HUB_APP_NAMESPACE
           value: {{ .Values.global.vpArgoNamespace | default "vp-gitops" | quote }}
         - name: KUBECONFIG

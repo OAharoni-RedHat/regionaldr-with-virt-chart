@@ -64,14 +64,10 @@ spec:
           value: {{ printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit-hub") (index (.Values.main | default dict) "clusterGroupName" | default "resilient") | quote }}
         - name: ARGOCD_APP_NAME
           value: "regional-dr"
-        # Prefer Argo-substituted global.namespace; fall back to pattern-clusterGroup.name
-        # (hub BOM name). Do not use main.clusterGroupName — that is the spoke group.
+        # Application CR namespace = pattern-clusterGroup.name (NOT destination /
+        # $ARGOCD_APP_NAMESPACE, which is the chart destination e.g. regional-dr).
         - name: ARGOCD_APP_NAMESPACE
-          {{- $appNs := .Values.global.namespace | default "" }}
-          {{- if or (eq $appNs "") (eq $appNs "$ARGOCD_APP_NAMESPACE") }}
-          {{- $appNs = printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit") ((index (.Values.clusterGroup | default dict) "name") | default "hub") }}
-          {{- end }}
-          value: {{ $appNs | quote }}
+          value: {{ include "rdr.argocdApplicationNamespace" . | quote }}
         - name: DRPC_HEALTH_MAX_ATTEMPTS
           value: {{ index $drpcHC "maxAttempts" | default 30 | quote }}
         - name: DRPC_HEALTH_RETRY_DELAY

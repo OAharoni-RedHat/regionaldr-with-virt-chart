@@ -223,6 +223,12 @@ s3profile-{{ include "rdr.secondaryClusterName" . }}
 {{- if not (hasKey $egv "enabled") -}}1{{- else if index $egv "enabled" -}}1{{- else -}}0{{- end -}}
 {{- end -}}
 
+{{/* PostSync argocd-sync-disable Job + RBAC. Default on. */}}
+{{- define "rdr.argocdDisableAutomatedSync" -}}
+{{- $argocd := .Values.argocd | default dict -}}
+{{- if not (hasKey $argocd "disableAutomatedSync") -}}1{{- else if index $argocd "disableAutomatedSync" -}}1{{- else -}}0{{- end -}}
+{{- end -}}
+
 {{/* Stable checksum of packaged ansible/ (excludes dotfiles). Drives Job annotation drift on chart updates. */}}
 {{- define "rdr.ansibleConfigChecksum" -}}
 {{- $paths := list -}}
@@ -265,4 +271,15 @@ checksum/regionaldr-ansible: {{ include "rdr.ansibleConfigChecksum" . | quote }}
 {{/* Argo CD sync-options for the ansible ConfigMap. */}}
 {{- define "rdr.ansibleConfigMapArgoSyncOptions" -}}
 {{- .Values.ansible.configMapArgoSyncOptions | default "Prune=false,ServerSideApply=true" -}}
+{{- end -}}
+
+{{/*
+Namespace of the Argo CD Application CR (validated-patterns app-of-apps child).
+
+Do NOT use global.namespace / $ARGOCD_APP_NAMESPACE: Argo CD substitutes that with
+spec.destination.namespace (e.g. regional-dr), not metadata.namespace of the
+Application (e.g. ramendr-starter-kit-drpartner-s4).
+*/}}
+{{- define "rdr.argocdApplicationNamespace" -}}
+{{- printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit") ((index (.Values.clusterGroup | default dict) "name") | default "hub") -}}
 {{- end -}}

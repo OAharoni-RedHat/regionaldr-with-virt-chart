@@ -1,8 +1,10 @@
+{{- if eq "1" (include "rdr.argocdDisableAutomatedSync" . | trim) }}
 ---
-# Always runs after PostSync settlement (wave 13) — including drpartner-minimal
-# (resourcesEnabled and infrastructureEnabled both false). When resourcesEnabled,
-# wave 12 DRPC health must succeed first. Disables Application automated sync
-# once Sync resources have settled.
+# Runs after PostSync settlement (wave 13) when argocd.disableAutomatedSync is
+# true (default) — including drpartner-minimal. When resourcesEnabled, wave 12
+# DRPC health must succeed first. Disables Application automated sync once Sync
+# resources have settled, and adds hub ignoreDifferences so parent selfHeal does
+# not re-apply automated from git.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -45,7 +47,9 @@ spec:
 {{ include "rdr.ansibleBootstrap" . | indent 10 }}
             ansible-playbook -i inventory/hosts playbooks/argocd_sync_disable.yml \
               -e "argocd_app_name=${ARGOCD_APP_NAME:-regional-dr}" \
-              -e "argocd_app_namespace=${ARGOCD_APP_NAMESPACE}"
+              -e "argocd_app_namespace=${ARGOCD_APP_NAMESPACE}" \
+              -e "argocd_hub_app_name=${ARGOCD_HUB_APP_NAME}" \
+              -e "argocd_hub_app_namespace=${ARGOCD_HUB_APP_NAMESPACE}"
         volumeMounts:
         - name: ansible
           mountPath: /ansible-cm
@@ -53,11 +57,19 @@ spec:
         env:
         - name: ARGOCD_APP_NAME
           value: "regional-dr"
+        # Application CR namespace = pattern-clusterGroup.name (NOT destination /
+        # $ARGOCD_APP_NAMESPACE, which is regional-dr).
         - name: ARGOCD_APP_NAMESPACE
-          value: {{ printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit-hub") (index (.Values.main | default dict) "clusterGroupName" | default "resilient") | quote }}
+          value: {{ include "rdr.argocdApplicationNamespace" . | quote }}
+        # Hub app-of-apps name matches the child Applications namespace.
+        - name: ARGOCD_HUB_APP_NAME
+          value: {{ include "rdr.argocdApplicationNamespace" . | quote }}
+        - name: ARGOCD_HUB_APP_NAMESPACE
+          value: {{ .Values.global.vpArgoNamespace | default "vp-gitops" | quote }}
         - name: KUBECONFIG
           value: ""
       volumes:
       - name: ansible
         configMap:
           name: rdr-ansible
+{{- end }}

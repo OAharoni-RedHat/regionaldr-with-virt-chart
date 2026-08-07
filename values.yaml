@@ -12,8 +12,15 @@ clusterCaMgt:
 
 global:
   clusterDomain: cluster.example.com
-  # Pattern name; target application namespace = global.pattern-main.clusterGroupName
+  # Pattern name. Application CR namespace for PostSync Jobs is
+  # global.pattern-clusterGroup.name (NOT global.namespace).
+  # Argo $ARGOCD_APP_NAMESPACE / global.namespace is the destination namespace
+  # (e.g. regional-dr), not where the Application CR lives.
   pattern: ramendr-starter-kit-hub
+  # Set by Argo CD to $ARGOCD_APP_NAMESPACE → destination namespace only.
+  # namespace: ""
+  # Parent hub Application namespace (validated patterns app-of-apps).
+  vpArgoNamespace: vp-gitops
   # AWS: Hive AWS creds ExternalSecret, ClusterDeployment platform.aws, Submariner gateway/credentials. Use non-AWS (e.g. BareMetal) to skip those.
   clusterPlatform: AWS
 
@@ -79,7 +86,9 @@ drCluster:
       # -- Job activeDeadlineSeconds.
       activeDeadlineSeconds: 7200
 
-# Main cluster group (primary); target application namespace = global.pattern-main.clusterGroupName
+# Main cluster group name used by some chart defaults. Application CR namespace
+# for PostSync Jobs is global.pattern-clusterGroup.name (hub BOM), not this
+# spoke-oriented default and not global.namespace / $ARGOCD_APP_NAMESPACE.
 main:
   clusterGroupName: resilient
 
@@ -100,6 +109,13 @@ edgeGitopsVms:
   # -- When false, skip the edge-gitops-vms deploy Job and its RBAC/ConfigMap.
   enabled: true
   chartVersion: "0.5.2"
+
+# Argo CD Application control after chart settlement.
+argocd:
+  # -- When true, PostSync Job (wave 13) removes regional-dr Application automated
+  # sync and adds hub ignoreDifferences so parent selfHeal cannot re-enable it.
+  # Set false to leave autosync on after install.
+  disableAutomatedSync: true
 
 # Optional: install boutique from charts.validatedpatterns.io on the same cluster as edge-gitops-vms (PostSync job).
 boutique:
@@ -168,7 +184,11 @@ drpc:
   # DRPolicy status is Validated=True and status.async.peerClasses include replicationID.
   vmStorageClassName: ocs-storagecluster-ceph-rbd-virtualization
   # PostSync Job drpc-health-check (resourcesEnabled only). Argo CD sync disable is a
-  # separate PostSync Job (argocd-sync-disable, wave 13) and always runs after settlement.
+  # separate PostSync Job (argocd-sync-disable, wave 13) when argocd.disableAutomatedSync
+  # is true (default). Sync-disable looks up the Application CR in pattern-clusterGroup.name
+  # (not destination global.namespace) and patches the hub Application (global.vpArgoNamespace)
+  # with ignoreDifferences on Application/regional-dr /spec/syncPolicy/automated so parent
+  # selfHeal cannot re-enable it.
   healthCheck:
     maxAttempts: 30
     retryDelaySeconds: 30

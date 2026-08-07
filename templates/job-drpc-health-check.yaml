@@ -64,8 +64,10 @@ spec:
           value: {{ printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit-hub") (index (.Values.main | default dict) "clusterGroupName" | default "resilient") | quote }}
         - name: ARGOCD_APP_NAME
           value: "regional-dr"
+        # Application CR namespace = pattern-clusterGroup.name (NOT destination /
+        # $ARGOCD_APP_NAMESPACE, which is the chart destination e.g. regional-dr).
         - name: ARGOCD_APP_NAMESPACE
-          value: {{ printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit-hub") (index (.Values.main | default dict) "clusterGroupName" | default "resilient") | quote }}
+          value: {{ include "rdr.argocdApplicationNamespace" . | quote }}
         - name: DRPC_HEALTH_MAX_ATTEMPTS
           value: {{ index $drpcHC "maxAttempts" | default 30 | quote }}
         - name: DRPC_HEALTH_RETRY_DELAY

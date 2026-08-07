@@ -1,3 +1,4 @@
+{{- if eq "1" (include "rdr.argocdDisableAutomatedSync" . | trim) }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -42,3 +43,4 @@ subjects:
 - kind: ServiceAccount
   name: argocd-sync-disable
   namespace: open-cluster-management
+{{- end }}

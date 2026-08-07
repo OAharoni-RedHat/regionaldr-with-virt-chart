@@ -1,6 +1,7 @@
 ---
 # One-time disable of Argo CD automated sync on the regional-dr Application after
-# PostSync settlement (independent of DRPC health / managed workloads).
+# PostSync settlement, plus hub ignoreDifferences so parent selfHeal cannot
+# re-enable automated sync from git (independent of DRPC health / managed workloads).
 - name: Disable Argo CD automated sync
   hosts: localhost
   gather_facts: false

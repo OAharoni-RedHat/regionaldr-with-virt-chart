@@ -1,8 +1,11 @@
 suite: argocd sync-disable Job
 templates:
   - job-argocd-sync-disable.yaml
+  - rbac-argocd-sync-disable.yaml
 tests:
   - it: uses pattern-clusterGroup.name not destination global.namespace
+    templates:
+      - job-argocd-sync-disable.yaml
     set:
       global:
         # Argo $ARGOCD_APP_NAMESPACE substitutes to destination (regional-dr) —
@@ -26,6 +29,8 @@ tests:
           value: vp-gitops
 
   - it: uses clusterGroup.name for minimal variant
+    templates:
+      - job-argocd-sync-disable.yaml
     set:
       global:
         namespace: regional-dr
@@ -37,3 +42,41 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].env[?(@.name=="ARGOCD_APP_NAMESPACE")].value
           value: ramendr-starter-kit-drpartner-minimal
+
+  - it: renders Job by default (disableAutomatedSync true)
+    templates:
+      - job-argocd-sync-disable.yaml
+    set:
+      global:
+        pattern: ramendr-starter-kit
+      clusterGroup:
+        name: drpartner-s4
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Job
+
+  - it: renders RBAC by default (disableAutomatedSync true)
+    templates:
+      - rbac-argocd-sync-disable.yaml
+    set:
+      global:
+        pattern: ramendr-starter-kit
+      clusterGroup:
+        name: drpartner-s4
+    asserts:
+      - hasDocuments:
+          count: 3
+
+  - it: skips Job and RBAC when disableAutomatedSync is false
+    set:
+      argocd:
+        disableAutomatedSync: false
+      global:
+        pattern: ramendr-starter-kit
+      clusterGroup:
+        name: drpartner-s4
+    asserts:
+      - hasDocuments:
+          count: 0

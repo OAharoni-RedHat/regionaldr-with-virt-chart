@@ -223,6 +223,12 @@ s3profile-{{ include "rdr.secondaryClusterName" . }}
 {{- if not (hasKey $egv "enabled") -}}1{{- else if index $egv "enabled" -}}1{{- else -}}0{{- end -}}
 {{- end -}}
 
+{{/* PostSync argocd-sync-disable Job + RBAC. Default on. */}}
+{{- define "rdr.argocdDisableAutomatedSync" -}}
+{{- $argocd := .Values.argocd | default dict -}}
+{{- if not (hasKey $argocd "disableAutomatedSync") -}}1{{- else if index $argocd "disableAutomatedSync" -}}1{{- else -}}0{{- end -}}
+{{- end -}}
+
 {{/* Stable checksum of packaged ansible/ (excludes dotfiles). Drives Job annotation drift on chart updates. */}}
 {{- define "rdr.ansibleConfigChecksum" -}}
 {{- $paths := list -}}

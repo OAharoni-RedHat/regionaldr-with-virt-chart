@@ -110,6 +110,13 @@ edgeGitopsVms:
   enabled: true
   chartVersion: "0.5.2"
 
+# Argo CD Application control after chart settlement.
+argocd:
+  # -- When true, PostSync Job (wave 13) removes regional-dr Application automated
+  # sync and adds hub ignoreDifferences so parent selfHeal cannot re-enable it.
+  # Set false to leave autosync on after install.
+  disableAutomatedSync: true
+
 # Optional: install boutique from charts.validatedpatterns.io on the same cluster as edge-gitops-vms (PostSync job).
 boutique:
   deploy: false
@@ -177,10 +184,10 @@ drpc:
   # DRPolicy status is Validated=True and status.async.peerClasses include replicationID.
   vmStorageClassName: ocs-storagecluster-ceph-rbd-virtualization
   # PostSync Job drpc-health-check (resourcesEnabled only). Argo CD sync disable is a
-  # separate PostSync Job (argocd-sync-disable, wave 13) and always runs after settlement.
-  # Sync-disable looks up the Application CR in pattern-clusterGroup.name (not destination
-  # global.namespace) and patches the hub Application (global.vpArgoNamespace) with
-  # ignoreDifferences on Application/regional-dr /spec/syncPolicy/automated so parent
+  # separate PostSync Job (argocd-sync-disable, wave 13) when argocd.disableAutomatedSync
+  # is true (default). Sync-disable looks up the Application CR in pattern-clusterGroup.name
+  # (not destination global.namespace) and patches the hub Application (global.vpArgoNamespace)
+  # with ignoreDifferences on Application/regional-dr /spec/syncPolicy/automated so parent
   # selfHeal cannot re-enable it.
   healthCheck:
     maxAttempts: 30

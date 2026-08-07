@@ -1,9 +1,10 @@
+{{- if eq "1" (include "rdr.argocdDisableAutomatedSync" . | trim) }}
 ---
-# Always runs after PostSync settlement (wave 13) — including drpartner-minimal
-# (resourcesEnabled and infrastructureEnabled both false). When resourcesEnabled,
-# wave 12 DRPC health must succeed first. Disables Application automated sync
-# once Sync resources have settled, and adds hub ignoreDifferences so parent
-# selfHeal does not re-apply automated from git.
+# Runs after PostSync settlement (wave 13) when argocd.disableAutomatedSync is
+# true (default) — including drpartner-minimal. When resourcesEnabled, wave 12
+# DRPC health must succeed first. Disables Application automated sync once Sync
+# resources have settled, and adds hub ignoreDifferences so parent selfHeal does
+# not re-apply automated from git.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -71,3 +72,4 @@ spec:
       - name: ansible
         configMap:
           name: rdr-ansible
+{{- end }}

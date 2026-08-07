@@ -2,7 +2,8 @@
 # Always runs after PostSync settlement (wave 13) — including drpartner-minimal
 # (resourcesEnabled and infrastructureEnabled both false). When resourcesEnabled,
 # wave 12 DRPC health must succeed first. Disables Application automated sync
-# once Sync resources have settled.
+# once Sync resources have settled, and adds hub ignoreDifferences so parent
+# selfHeal does not re-apply automated from git.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -45,7 +46,9 @@ spec:
 {{ include "rdr.ansibleBootstrap" . | indent 10 }}
             ansible-playbook -i inventory/hosts playbooks/argocd_sync_disable.yml \
               -e "argocd_app_name=${ARGOCD_APP_NAME:-regional-dr}" \
-              -e "argocd_app_namespace=${ARGOCD_APP_NAMESPACE}"
+              -e "argocd_app_namespace=${ARGOCD_APP_NAMESPACE}" \
+              -e "argocd_hub_app_name=${ARGOCD_HUB_APP_NAME}" \
+              -e "argocd_hub_app_namespace=${ARGOCD_HUB_APP_NAMESPACE}"
         volumeMounts:
         - name: ansible
           mountPath: /ansible-cm
@@ -53,8 +56,19 @@ spec:
         env:
         - name: ARGOCD_APP_NAME
           value: "regional-dr"
+        # Prefer Argo-substituted global.namespace; fall back to pattern-clusterGroup.name
+        # (hub BOM name). Do not use main.clusterGroupName — that is the spoke group.
         - name: ARGOCD_APP_NAMESPACE
-          value: {{ printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit-hub") (index (.Values.main | default dict) "clusterGroupName" | default "resilient") | quote }}
+          {{- $appNs := .Values.global.namespace | default "" }}
+          {{- if or (eq $appNs "") (eq $appNs "$ARGOCD_APP_NAMESPACE") }}
+          {{- $appNs = printf "%s-%s" (.Values.global.pattern | default "ramendr-starter-kit") ((index (.Values.clusterGroup | default dict) "name") | default "hub") }}
+          {{- end }}
+          value: {{ $appNs | quote }}
+        # Hub app-of-apps name matches the child Applications namespace in validated patterns.
+        - name: ARGOCD_HUB_APP_NAME
+          value: {{ $appNs | quote }}
+        - name: ARGOCD_HUB_APP_NAMESPACE
+          value: {{ .Values.global.vpArgoNamespace | default "vp-gitops" | quote }}
         - name: KUBECONFIG
           value: ""
       volumes:

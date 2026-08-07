@@ -12,8 +12,13 @@ clusterCaMgt:
 
 global:
   clusterDomain: cluster.example.com
-  # Pattern name; target application namespace = global.pattern-main.clusterGroupName
+  # Pattern name. With Argo CD, Application namespace comes from global.namespace
+  # ($ARGOCD_APP_NAMESPACE). Fallback for Jobs: global.pattern-clusterGroup.name.
   pattern: ramendr-starter-kit-hub
+  # Set by Argo CD to $ARGOCD_APP_NAMESPACE (substituted to the Application namespace).
+  # namespace: ""
+  # Parent hub Application namespace (validated patterns app-of-apps).
+  vpArgoNamespace: vp-gitops
   # AWS: Hive AWS creds ExternalSecret, ClusterDeployment platform.aws, Submariner gateway/credentials. Use non-AWS (e.g. BareMetal) to skip those.
   clusterPlatform: AWS
 
@@ -79,7 +84,9 @@ drCluster:
       # -- Job activeDeadlineSeconds.
       activeDeadlineSeconds: 7200
 
-# Main cluster group (primary); target application namespace = global.pattern-main.clusterGroupName
+# Main cluster group name used by some chart defaults. Application namespace for
+# PostSync Jobs prefers global.namespace, then global.pattern-clusterGroup.name
+# (hub BOM). This spoke-oriented default is not used for ARGOCD_APP_NAMESPACE.
 main:
   clusterGroupName: resilient
 
@@ -169,6 +176,9 @@ drpc:
   vmStorageClassName: ocs-storagecluster-ceph-rbd-virtualization
   # PostSync Job drpc-health-check (resourcesEnabled only). Argo CD sync disable is a
   # separate PostSync Job (argocd-sync-disable, wave 13) and always runs after settlement.
+  # Sync-disable targets global.namespace (Argo $ARGOCD_APP_NAMESPACE) and patches the
+  # hub Application (global.vpArgoNamespace) with ignoreDifferences on
+  # Application/regional-dr /spec/syncPolicy/automated so parent selfHeal cannot re-enable it.
   healthCheck:
     maxAttempts: 30
     retryDelaySeconds: 30

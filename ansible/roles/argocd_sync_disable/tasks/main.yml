@@ -1,6 +1,25 @@
 ---
-# Never fail the play here: DRPC can already be healthy while the Application name/NS is wrong or RBAC denies get.
-- name: Look up Argo CD Application
+# Disable automated sync on the regional-dr Application after PostSync settlement,
+# and ensure the parent hub Application ignores that drift so selfHeal does not
+# re-enable automated sync from git.
+#
+# Expects:
+#   argocd_app_name          — child Application name (default regional-dr)
+#   argocd_app_namespace     — namespace of the child Application (Argo app-of-apps NS)
+#   argocd_hub_app_name      — parent hub Application name (usually same as app NS)
+#   argocd_hub_app_namespace — parent hub Application namespace (vp-gitops / vpArgoNamespace)
+
+- name: Require Application namespace
+  ansible.builtin.assert:
+    that:
+      - argocd_app_namespace is defined
+      - (argocd_app_namespace | string | length) > 0
+      - (argocd_app_namespace | string) != "$ARGOCD_APP_NAMESPACE"
+    fail_msg: >-
+      argocd_app_namespace must be the live Argo CD Application namespace
+      (global.namespace / $ARGOCD_APP_NAMESPACE), not empty or unsubstituted.
+
+- name: Look up regional-dr Argo CD Application
   ansible.builtin.command:
     argv:
       - oc
@@ -13,15 +32,104 @@
   changed_when: false
   failed_when: false
 
-- name: Skip automated sync disable when Application is absent or not readable
-  ansible.builtin.debug:
+- name: Fail when regional-dr Application is absent or not readable
+  ansible.builtin.fail:
     msg: >-
-      Skipping Argo CD automated sync disable — could not read Application
+      Cannot disable automated sync — could not read Application
       {{ argocd_app_name }}/{{ argocd_app_namespace }} (rc={{ drpc_argocd_app_get.rc }}).
+      Check ARGOCD_APP_NAMESPACE (should be global.namespace from Argo CD).
   when: drpc_argocd_app_get.rc != 0
 
-- name: Adjust Argo CD automated sync when Application exists
-  when: drpc_argocd_app_get.rc == 0
+- name: Ensure hub Application ignores syncPolicy.automated drift on regional-dr
+  when:
+    - argocd_hub_app_name is defined
+    - (argocd_hub_app_name | string | length) > 0
+    - argocd_hub_app_namespace is defined
+    - (argocd_hub_app_namespace | string | length) > 0
+  block:
+    - name: Look up hub Argo CD Application
+      ansible.builtin.command:
+        argv:
+          - oc
+          - get
+          - applications.argoproj.io
+          - "{{ argocd_hub_app_name }}"
+          - -n
+          - "{{ argocd_hub_app_namespace }}"
+          - -o
+          - json
+      register: hub_app_get
+      changed_when: false
+      failed_when: false
+
+    - name: Warn when hub Application is absent (cannot install ignoreDifferences)
+      ansible.builtin.debug:
+        msg: >-
+          Skipping hub ignoreDifferences — could not read Application
+          {{ argocd_hub_app_name }}/{{ argocd_hub_app_namespace }} (rc={{ hub_app_get.rc }}).
+          Parent selfHeal may re-enable automated sync on {{ argocd_app_name }}.
+      when: hub_app_get.rc != 0
+
+    - name: Stage hub Application JSON
+      when: hub_app_get.rc == 0
+      ansible.builtin.copy:
+        content: "{{ hub_app_get.stdout }}"
+        dest: /tmp/hub-argocd-app.json
+        mode: "0600"
+
+    - name: Merge hub ignoreDifferences for regional-dr syncPolicy.automated
+      when: hub_app_get.rc == 0
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - |
+            import json, subprocess, sys
+            app = json.load(open("/tmp/hub-argocd-app.json"))
+            name = "{{ argocd_hub_app_name }}"
+            ns = "{{ argocd_hub_app_namespace }}"
+            child = "{{ argocd_app_name }}"
+            pointer = "/spec/syncPolicy/automated"
+            diffs = list(app.get("spec", {}).get("ignoreDifferences") or [])
+            found = False
+            changed = False
+            for d in diffs:
+                if d.get("group") != "argoproj.io" or d.get("kind") != "Application":
+                    continue
+                if d.get("name") not in (None, "", child):
+                    continue
+                found = True
+                if d.get("name") != child:
+                    d["name"] = child
+                    changed = True
+                pointers = list(d.get("jsonPointers") or [])
+                if pointer not in pointers:
+                    pointers.append(pointer)
+                    d["jsonPointers"] = pointers
+                    changed = True
+                break
+            if not found:
+                diffs.append({
+                    "group": "argoproj.io",
+                    "kind": "Application",
+                    "name": child,
+                    "jsonPointers": [pointer],
+                })
+                changed = True
+            if not changed:
+                print("hub ignoreDifferences already present")
+                sys.exit(0)
+            op = "replace" if app.get("spec", {}).get("ignoreDifferences") is not None else "add"
+            patch = [{"op": op, "path": "/spec/ignoreDifferences", "value": diffs}]
+            subprocess.check_call([
+                "oc", "patch", "applications.argoproj.io", name, "-n", ns,
+                "--type=json", "-p", json.dumps(patch),
+            ])
+            print("updated hub ignoreDifferences for %s%s" % (child, pointer))
+      register: hub_ignore_patch
+      changed_when: "'updated hub ignoreDifferences' in (hub_ignore_patch.stdout | default(''))"
+
+- name: Adjust Argo CD automated sync on regional-dr Application
   block:
     - name: Read spec.syncPolicy
       ansible.builtin.command:
@@ -95,4 +203,4 @@
         -p='{"spec":{"syncPolicy":{"automated":null}}}'
       register: patch_merge
       changed_when: patch_merge.rc == 0
-      failed_when: false
+      failed_when: patch_merge.rc != 0

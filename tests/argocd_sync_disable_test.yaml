@@ -1,0 +1,52 @@
+suite: argocd sync-disable Job
+templates:
+  - job-argocd-sync-disable.yaml
+tests:
+  - it: uses global.namespace for ARGOCD_APP_NAMESPACE when set
+    set:
+      global:
+        namespace: ramendr-starter-kit-drpartner-s4
+        pattern: ramendr-starter-kit
+        vpArgoNamespace: vp-gitops
+      clusterGroup:
+        name: drpartner-s4
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARGOCD_APP_NAMESPACE")].value
+          value: ramendr-starter-kit-drpartner-s4
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARGOCD_HUB_APP_NAME")].value
+          value: ramendr-starter-kit-drpartner-s4
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARGOCD_HUB_APP_NAMESPACE")].value
+          value: vp-gitops
+
+  - it: falls back to pattern-clusterGroup.name not spoke main.clusterGroupName
+    set:
+      global:
+        pattern: ramendr-starter-kit
+        vpArgoNamespace: vp-gitops
+      clusterGroup:
+        name: drpartner-s4
+      main:
+        clusterGroupName: resilient
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARGOCD_APP_NAMESPACE")].value
+          value: ramendr-starter-kit-drpartner-s4
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARGOCD_HUB_APP_NAME")].value
+          value: ramendr-starter-kit-drpartner-s4
+
+  - it: ignores unsubstituted $ARGOCD_APP_NAMESPACE literal and falls back
+    set:
+      global:
+        namespace: "$ARGOCD_APP_NAMESPACE"
+        pattern: ramendr-starter-kit
+        vpArgoNamespace: vp-gitops
+      clusterGroup:
+        name: drpartner-minimal
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARGOCD_APP_NAMESPACE")].value
+          value: ramendr-starter-kit-drpartner-minimal

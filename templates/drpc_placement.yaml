@@ -1,4 +1,5 @@
 {{- if eq "1" (include "rdr.ramenResourcesEnabled" .) }}
+{{- $drpc := .Values.drpc | default dict }}
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -9,7 +10,7 @@ metadata:
     drplacementcontrol.ramendr.openshift.io/drpc-namespace: openshift-dr-ops
     argocd.argoproj.io/sync-wave: "8"
   name: gitops-vm-protection-placement-1
-  namespace: openshift-dr-ops
+  namespace: {{ index $drpc "placementRef" "namespace" | default "openshift-dr-ops" }}
 spec:
   decisionStrategy:
     groupStrategy:

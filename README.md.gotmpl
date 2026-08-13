@@ -27,6 +27,7 @@ PostSync settlement: `drpc-health-check` (wave **12**, only when `ramen.resource
 
 ## Notable changes
 
+v0.1.2 - Parameterize DRPC placement to use values specified.
 v0.1.1 - Fix argocd-sync-disable / drpc-health Application CR namespace: use `pattern`-`clusterGroup.name` (not spoke `main.clusterGroupName`, and not `$ARGOCD_APP_NAMESPACE` / `global.namespace` which is destination `regional-dr`); add hub Application ignoreDifferences for regional-dr syncPolicy.automated so disable sticks under parent selfHeal; fail the Job when the Application is missing instead of soft-skipping; gate sync-disable with `argocd.disableAutomatedSync` (default true)
 v0.1.0 - Replace `odf.postInstallFixesEnabled` / `odf.drCluster` with `drCluster.create` and default S3 profile names (`s3profile-` plus cluster name); add `ramen.infrastructureEnabled` for DRPolicy/validation/chart DRClusters when `resourcesEnabled` is false; upsert hub Ramen `s3StoreProfiles` when chart-owned DRClusters are created (values-driven, hub S4 defaults; opp-policy still owns `caCertificates`); Sync-hook (not PostSync) so profiles exist before DRPolicy validation; split DRPC health check from Argo CD sync-disable (sync-disable always runs after settlement)
 v0.0.4 - Add `ramen.resourcesEnabled` and `edgeGitopsVms.enabled` gates for partner CSI foundation installs

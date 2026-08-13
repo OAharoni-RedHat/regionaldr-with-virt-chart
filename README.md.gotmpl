@@ -23,7 +23,10 @@ The `drcluster-validation-<policy>` job (Argo CD sync-wave **8**) enforces these
 
 When chart-owned DRClusters are created (`drCluster.create` or partner `ramen.infrastructureEnabled` with `resourcesEnabled: false`), an Argo CD **Sync** hook Job at wave **6** upserts matching hub top-level `s3StoreProfiles` (primary + secondary only) into `ramen-hub-operator-config` (defaults: hub **vp-s4-storage** credentials and Route) **before** DRClusters (wave 7) and DRPolicy validation (wave 8). **opp-policy** still injects `caCertificates` afterward.
 
-PostSync settlement: `drpc-health-check` (wave **12**, only when `ramen.resourcesEnabled`) waits for DRPC health. When `argocd.disableAutomatedSync` is true (default), `argocd-sync-disable` (wave **13**) then removes Application automated sync so the regional-dr app stops reconciling after things settle — including `drpartner-s4` (`resourcesEnabled: false`) and `drpartner-minimal` (both `resourcesEnabled` and `infrastructureEnabled` false). The Job looks up the Application CR in `global.pattern`-`clusterGroup.name` (not Argo `$ARGOCD_APP_NAMESPACE`, which is the **destination** namespace `regional-dr`) and patches the parent hub Application in `global.vpArgoNamespace` with `ignoreDifferences` on `Application/regional-dr` `/spec/syncPolicy/automated` so hub selfHeal cannot re-enable autosync from git. Set `argocd.disableAutomatedSync: false` to leave autosync on.
+PostSync settlement: `drpc-health-check` (wave **12**, only when `ramen.resourcesEnabled`) waits for DRPC health.
+When `argocd.disableAutomatedSync` is true (default), `argocd-sync-disable` (wave **13**) then removes Application automated sync so the regional-dr app stops reconciling after things settle — including `drpartner-s4` (`resourcesEnabled: false`) and `drpartner-minimal` (both `resourcesEnabled` and `infrastructureEnabled` false).
+The Job looks up the Application CR in `global.pattern`-`clusterGroup.name` (not Argo `$ARGOCD_APP_NAMESPACE`, which is the **destination** namespace `regional-dr`) and patches the parent hub Application in `global.vpArgoNamespace` with `ignoreDifferences` on `Application/regional-dr` `/spec/syncPolicy/automated` so hub selfHeal cannot re-enable autosync from Git.
+Set `argocd.disableAutomatedSync: false` to leave autosync on.
 
 ## Notable changes
 

@@ -1,0 +1,200 @@
+# DRPC and Placement honor drpc.* values (name, namespace, placementRef, policy, selectors).
+suite: DRPC and Placement parameters
+templates:
+  - drpc.yaml
+  - drpc_placement.yaml
+  - job-drpc-health-check.yaml
+tests:
+  - it: defaults render DRPC with chart values
+    templates:
+      - drpc.yaml
+    asserts:
+      - notFailedTemplate: {}
+      - isKind:
+          of: DRPlacementControl
+      - equal:
+          path: metadata.name
+          value: gitops-vm-protection
+      - equal:
+          path: metadata.namespace
+          value: openshift-dr-ops
+      - equal:
+          path: metadata.annotations["drplacementcontrol.ramendr.openshift.io/app-namespace"]
+          value: openshift-dr-ops
+      - equal:
+          path: spec.drPolicyRef.name
+          value: 2m-vm
+      - equal:
+          path: spec.placementRef.name
+          value: gitops-vm-protection-placement-1
+      - equal:
+          path: spec.placementRef.namespace
+          value: openshift-dr-ops
+      - equal:
+          path: spec.preferredCluster
+          value: ocp-primary
+      - equal:
+          path: spec.protectedNamespaces[0]
+          value: gitops-vms
+      - equal:
+          path: spec.kubeObjectProtection.captureInterval
+          value: 2m0s
+
+  - it: defaults render Placement matching DRPC placementRef
+    templates:
+      - drpc_placement.yaml
+    asserts:
+      - notFailedTemplate: {}
+      - isKind:
+          of: Placement
+      - equal:
+          path: metadata.name
+          value: gitops-vm-protection-placement-1
+      - equal:
+          path: metadata.namespace
+          value: openshift-dr-ops
+      - equal:
+          path: metadata.annotations["drplacementcontrol.ramendr.openshift.io/drpc-name"]
+          value: gitops-vm-protection
+      - equal:
+          path: metadata.annotations["drplacementcontrol.ramendr.openshift.io/drpc-namespace"]
+          value: openshift-dr-ops
+
+  - it: overrides DRPC name and namespace
+    templates:
+      - drpc.yaml
+    set:
+      drpc:
+        name: custom-drpc
+        namespace: custom-dr-ns
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom-drpc
+      - equal:
+          path: metadata.namespace
+          value: custom-dr-ns
+      - equal:
+          path: metadata.annotations["drplacementcontrol.ramendr.openshift.io/app-namespace"]
+          value: custom-dr-ns
+
+  - it: overrides Placement name and namespace via placementRef
+    templates:
+      - drpc_placement.yaml
+    set:
+      drpc:
+        name: custom-drpc
+        namespace: custom-dr-ns
+        placementRef:
+          name: custom-placement
+          namespace: custom-placement-ns
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom-placement
+      - equal:
+          path: metadata.namespace
+          value: custom-placement-ns
+      - equal:
+          path: metadata.annotations["drplacementcontrol.ramendr.openshift.io/drpc-name"]
+          value: custom-drpc
+      - equal:
+          path: metadata.annotations["drplacementcontrol.ramendr.openshift.io/drpc-namespace"]
+          value: custom-dr-ns
+
+  - it: DRPC placementRef tracks placement overrides
+    templates:
+      - drpc.yaml
+    set:
+      drpc:
+        placementRef:
+          name: custom-placement
+          namespace: custom-placement-ns
+    asserts:
+      - equal:
+          path: spec.placementRef.name
+          value: custom-placement
+      - equal:
+          path: spec.placementRef.namespace
+          value: custom-placement-ns
+
+  - it: overrides drPolicyRef preferredCluster and protectedNamespaces
+    templates:
+      - drpc.yaml
+    set:
+      drpc:
+        drPolicyRef:
+          name: 5m-custom
+        preferredCluster: ocp-secondary
+        protectedNamespaces:
+          - app-a
+          - app-b
+    asserts:
+      - equal:
+          path: spec.drPolicyRef.name
+          value: 5m-custom
+      - equal:
+          path: spec.preferredCluster
+          value: ocp-secondary
+      - equal:
+          path: spec.protectedNamespaces[0]
+          value: app-a
+      - equal:
+          path: spec.protectedNamespaces[1]
+          value: app-b
+
+  - it: overrides kubeObjectProtection and pvcSelector
+    templates:
+      - drpc.yaml
+    set:
+      drpc:
+        kubeObjectProtection:
+          captureInterval: 5m0s
+          kubeObjectSelector:
+            matchLabels:
+              app: protected
+        pvcSelector:
+          matchLabels:
+            ramen: protect
+    asserts:
+      - equal:
+          path: spec.kubeObjectProtection.captureInterval
+          value: 5m0s
+      - equal:
+          path: spec.kubeObjectProtection.kubeObjectSelector.matchLabels.app
+          value: protected
+      - equal:
+          path: spec.pvcSelector.matchLabels.ramen
+          value: protect
+
+  - it: health-check Job uses overridden DRPC name and namespace
+    templates:
+      - job-drpc-health-check.yaml
+    set:
+      drpc:
+        name: custom-drpc
+        namespace: custom-dr-ns
+        healthCheck:
+          maxAttempts: 10
+          retryDelaySeconds: 15
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="DRPC_NAME")].value
+          value: custom-drpc
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="DRPC_NAMESPACE")].value
+          value: custom-dr-ns
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="DRPC_HEALTH_MAX_ATTEMPTS")].value
+          value: "10"
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="DRPC_HEALTH_RETRY_DELAY")].value
+          value: "15"
+
+  - it: skips DRPC Placement and health Job when resourcesEnabled is false
+    set:
+      ramen:
+        resourcesEnabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

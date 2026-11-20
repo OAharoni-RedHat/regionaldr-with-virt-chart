@@ -1,6 +1,6 @@
 # regionaldr-with-virt
 
-![Version: 0.1.4](https://img.shields.io/badge/Version-0.1.4-informational?style=flat-square)
+![Version: 0.1.5](https://img.shields.io/badge/Version-0.1.5-informational?style=flat-square)
 
 A Helm chart to deploy RegionalDR configuration including virtualization
 
@@ -50,7 +50,7 @@ The Job looks up the Application CR in `global.pattern`-`clusterGroup.name` (not
 Set `argocd.disableAutomatedSync: false` to leave autosync on.
 
 ## Notable changes
-
+v0.1.5 - Add `drplacementcontrol.ramendr.openshift.io/resync-on-primary` annotation to DRPC to force resync on primary cluster.
 v0.1.4 - Add helper function to fix the `argocd-sync-disable` job in cases with single ArgoCD instances.
 v0.1.3 - Add optional `ramen.updateRamenConfig` gate (default false) with Sync hook Job and RBAC to patch hub Ramen `drClusterOperator` (including `clusterServiceVersionName`) and `ramenOpsNamespace`; ConfigMap editor Jobs restart hub operator pods only when the ConfigMap changed (delete `app=ramen-hub` pods; do not `rollout restart`); set individual fields to `false` or `""` to skip that `yq` edit
 v0.1.2 - Parameterize DRPC placement to use values specified.

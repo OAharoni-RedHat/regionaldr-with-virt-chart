@@ -22,6 +22,9 @@ tests:
           path: metadata.annotations["drplacementcontrol.ramendr.openshift.io/app-namespace"]
           value: openshift-dr-ops
       - equal:
+          path: metadata.annotations["drplacementcontrol.ramendr.openshift.io/resync-on-primary"]
+          value: "true"
+      - equal:
           path: spec.drPolicyRef.name
           value: 2m-vm
       - equal:
